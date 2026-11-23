@@ -1,0 +1,50 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: TikTok,Impact,76,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,8,3,2,60,60,550,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:00.65,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}LIKE BONNIE{\r\c&H00FFFFFF&} IS LIKE SO...
+Dialogue: 0,0:00:00.65,0:00:01.30,TikTok,,0,0,0,,LIKE BONNIE {\c&H002EFFFF&\fscx112\fscy112}IS LIKE SO...{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:01.30,0:00:02.05,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}I DON'T KNOW BRO{\r\c&H00FFFFFF&} SHE FEELS LIKE
+Dialogue: 0,0:00:02.05,0:00:02.80,TikTok,,0,0,0,,I DON'T KNOW BRO {\c&H002EFFFF&\fscx112\fscy112}SHE FEELS LIKE{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:02.80,0:00:03.50,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}AN ALIEN{\r\c&H00FFFFFF&} TO ME.
+Dialogue: 0,0:00:03.50,0:00:04.20,TikTok,,0,0,0,,AN ALIEN {\c&H002EFFFF&\fscx112\fscy112}TO ME.{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:04.20,0:00:05.00,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}NAH BRO, BRO{\r\c&H00FFFFFF&} SHE'S JUST
+Dialogue: 0,0:00:05.00,0:00:05.80,TikTok,,0,0,0,,NAH BRO, BRO {\c&H002EFFFF&\fscx112\fscy112}SHE'S JUST{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:05.80,0:00:06.50,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}GENEROUS BRO,{\r\c&H00FFFFFF&} YOU HAVEN'T
+Dialogue: 0,0:00:06.50,0:00:07.20,TikTok,,0,0,0,,GENEROUS BRO, {\c&H002EFFFF&\fscx112\fscy112}YOU HAVEN'T{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:07.20,0:00:08.80,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}SEEN THAT REEL BRO.{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:08.80,0:00:09.60,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}GENEROUS?! 😂{\r\c&H00FFFFFF&} (LAUGHS)
+Dialogue: 0,0:00:09.60,0:00:10.40,TikTok,,0,0,0,,GENEROUS?! 😂 {\c&H002EFFFF&\fscx112\fscy112}(LAUGHS){\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:10.40,0:00:11.20,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}NAH YOU HAVEN'T{\r\c&H00FFFFFF&} SEEN THAT ONE REEL?
+Dialogue: 0,0:00:11.20,0:00:12.00,TikTok,,0,0,0,,NAH YOU HAVEN'T {\c&H002EFFFF&\fscx112\fscy112}SEEN THAT ONE REEL?{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:12.00,0:00:13.00,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}LIKE ONE GUY HAS{\r\c&H00FFFFFF&} LIKE A SMALL D**K,
+Dialogue: 0,0:00:13.00,0:00:14.00,TikTok,,0,0,0,,LIKE ONE GUY HAS {\c&H002EFFFF&\fscx112\fscy112}LIKE A SMALL D**K,{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:14.00,0:00:15.10,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}AND HE'S GETTING{\r\c&H00FFFFFF&} MADE FUN OF...
+Dialogue: 0,0:00:15.10,0:00:16.20,TikTok,,0,0,0,,AND HE'S GETTING {\c&H002EFFFF&\fscx112\fscy112}MADE FUN OF...{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:16.20,0:00:17.00,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}AND SHE JUST BRO,{\r\c&H00FFFFFF&} SHE STEPS UP
+Dialogue: 0,0:00:17.00,0:00:17.80,TikTok,,0,0,0,,AND SHE JUST BRO, {\c&H002EFFFF&\fscx112\fscy112}SHE STEPS UP{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:17.80,0:00:18.65,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}FOR HIM BRO,{\r\c&H00FFFFFF&} LOWKEY.
+Dialogue: 0,0:00:18.65,0:00:19.50,TikTok,,0,0,0,,FOR HIM BRO, {\c&H002EFFFF&\fscx112\fscy112}LOWKEY.{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:19.50,0:00:20.65,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}SO YOU GOT INFLUENCED{\r\c&H00FFFFFF&} BY THAT DA?! 😂
+Dialogue: 0,0:00:20.65,0:00:21.80,TikTok,,0,0,0,,SO YOU GOT INFLUENCED {\c&H002EFFFF&\fscx112\fscy112}BY THAT DA?! 😂{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:21.80,0:00:23.00,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}YEAH BRO, JUST ONE{\r\c&H00FFFFFF&} REEL PROPAGANDA BRO
+Dialogue: 0,0:00:23.00,0:00:24.20,TikTok,,0,0,0,,YEAH BRO, JUST ONE {\c&H002EFFFF&\fscx112\fscy112}REEL PROPAGANDA BRO{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:24.20,0:00:26.50,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}(LAUGHTER) 💀{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:26.50,0:00:27.75,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}SHANTHANOO, I CAN'T{\r\c&H00FFFFFF&} DEFEND YOU HERE DA! 😂
+Dialogue: 0,0:00:27.75,0:00:29.00,TikTok,,0,0,0,,SHANTHANOO, I CAN'T {\c&H002EFFFF&\fscx112\fscy112}DEFEND YOU HERE DA! 😂{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:29.00,0:00:30.40,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}BRO I'M TELLING YOU BRO,{\r\c&H00FFFFFF&} HE TELLS ME
+Dialogue: 0,0:00:30.40,0:00:31.80,TikTok,,0,0,0,,BRO I'M TELLING YOU BRO, {\c&H002EFFFF&\fscx112\fscy112}HE TELLS ME{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:31.80,0:00:32.90,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}SOME R******D STUFF,{\r\c&H00FFFFFF&} THEN I GO ON
+Dialogue: 0,0:00:32.90,0:00:34.00,TikTok,,0,0,0,,SOME R******D STUFF, {\c&H002EFFFF&\fscx112\fscy112}THEN I GO ON{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:34.00,0:00:35.10,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}TO TELL MORE{\r\c&H00FFFFFF&} R******D STUFF... 😂
+Dialogue: 0,0:00:35.10,0:00:36.20,TikTok,,0,0,0,,TO TELL MORE {\c&H002EFFFF&\fscx112\fscy112}R******D STUFF... 😂{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:36.20,0:00:37.10,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}HOW DO YOU GET INFLUENCED{\r\c&H00FFFFFF&} BY THAT DA?! 💀
+Dialogue: 0,0:00:37.10,0:00:38.00,TikTok,,0,0,0,,HOW DO YOU GET INFLUENCED {\c&H002EFFFF&\fscx112\fscy112}BY THAT DA?! 💀{\r\c&H00FFFFFF&}

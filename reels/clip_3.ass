@@ -1,0 +1,36 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: TikTok,Impact,76,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,8,3,2,60,60,550,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:01.90,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}🎶 RAKTHAMBARA{\r\c&H00FFFFFF&} BAALE... 🎶
+Dialogue: 0,0:00:01.90,0:00:03.80,TikTok,,0,0,0,,🎶 RAKTHAMBARA {\c&H002EFFFF&\fscx112\fscy112}BAALE... 🎶{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:03.80,0:00:06.00,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}🎶 RAKTHAMBARA{\r\c&H00FFFFFF&} BAALEEEEE 🎶
+Dialogue: 0,0:00:06.00,0:00:08.20,TikTok,,0,0,0,,🎶 RAKTHAMBARA {\c&H002EFFFF&\fscx112\fscy112}BAALEEEEE 🎶{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:08.20,0:00:10.50,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}🎺 [MOUTH TRUMPET{\r\c&H00FFFFFF&} SOLO] 🎺
+Dialogue: 0,0:00:10.50,0:00:12.80,TikTok,,0,0,0,,🎺 [MOUTH TRUMPET {\c&H002EFFFF&\fscx112\fscy112}SOLO] 🎺{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:12.80,0:00:15.00,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}THE F*CK I CAN'T{\r\c&H00FFFFFF&} DO YOUTUBE BRO 💀
+Dialogue: 0,0:00:15.00,0:00:17.20,TikTok,,0,0,0,,THE F*CK I CAN'T {\c&H002EFFFF&\fscx112\fscy112}DO YOUTUBE BRO 💀{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:17.20,0:00:19.35,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}OH SHOULD BE{\r\c&H00FFFFFF&} A 'W' WAIT...
+Dialogue: 0,0:00:19.35,0:00:21.50,TikTok,,0,0,0,,OH SHOULD BE {\c&H002EFFFF&\fscx112\fscy112}A 'W' WAIT...{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:21.50,0:00:24.00,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}🎶 ALLE BAELE{\r\c&H00FFFFFF&} ALLE ALLE LE... 🎶
+Dialogue: 0,0:00:24.00,0:00:26.50,TikTok,,0,0,0,,🎶 ALLE BAELE {\c&H002EFFFF&\fscx112\fscy112}ALLE ALLE LE... 🎶{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:26.50,0:00:28.50,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}🎶 YAANI NAANE{\r\c&H00FFFFFF&} NEENE MAANO... 🎶
+Dialogue: 0,0:00:28.50,0:00:30.50,TikTok,,0,0,0,,🎶 YAANI NAANE {\c&H002EFFFF&\fscx112\fscy112}NEENE MAANO... 🎶{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:30.50,0:00:32.50,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}🎶 HA AANE NINA{\r\c&H00FFFFFF&} NAANE... 🎶
+Dialogue: 0,0:00:32.50,0:00:34.50,TikTok,,0,0,0,,🎶 HA AANE NINA {\c&H002EFFFF&\fscx112\fscy112}NAANE... 🎶{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:34.50,0:00:36.50,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}🎶 AANI NINNO{\r\c&H00FFFFFF&} NAANI... 💀
+Dialogue: 0,0:00:36.50,0:00:38.50,TikTok,,0,0,0,,🎶 AANI NINNO {\c&H002EFFFF&\fscx112\fscy112}NAANI... 💀{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:38.50,0:00:40.00,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}ASHTENA? ASHTEH.{\r\c&H00FFFFFF&} IT'S OVER.
+Dialogue: 0,0:00:40.00,0:00:41.50,TikTok,,0,0,0,,ASHTENA? ASHTEH. {\c&H002EFFFF&\fscx112\fscy112}IT'S OVER.{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:41.50,0:00:43.50,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}DUDE HAS LOST{\r\c&H00FFFFFF&} IT BRO 😂
+Dialogue: 0,0:00:43.50,0:00:45.50,TikTok,,0,0,0,,DUDE HAS LOST {\c&H002EFFFF&\fscx112\fscy112}IT BRO 😂{\r\c&H00FFFFFF&}
+Dialogue: 0,0:00:45.50,0:00:47.15,TikTok,,0,0,0,,{\c&H002EFFFF&\fscx112\fscy112}I CAN'T EVEN{\r\c&H00FFFFFF&} BRO 💀💀
+Dialogue: 0,0:00:47.15,0:00:48.80,TikTok,,0,0,0,,I CAN'T EVEN {\c&H002EFFFF&\fscx112\fscy112}BRO 💀💀{\r\c&H00FFFFFF&}

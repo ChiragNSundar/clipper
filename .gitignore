@@ -1,0 +1,26 @@
+# Rendered Reels and video outputs
+reels/
+*.mp4
+*.part
+*.mov
+*.mkv
+*.webm
+
+# Audio and temporary cuts
+*.aac
+*.wav
+*.mp3
+*.ass
+
+# Test/inspection frames and scratch files
+preview_*
+frame_*
+test_*
+check_*
+
+# Python caches and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/

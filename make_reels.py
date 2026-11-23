@@ -2,9 +2,8 @@ import os
 import sys
 import shutil
 import subprocess
-import whisper
 
-# Set FFmpeg path in environment so Whisper can use it
+# Set FFmpeg path in environment
 FFMPEG_DIR = r"C:\Users\Chirag\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.1-full_build\bin"
 os.environ["PATH"] = FFMPEG_DIR + os.pathsep + os.environ.get("PATH", "")
 
@@ -22,24 +21,6 @@ OUT_DIR = "reels"
 BONNIE_IMG = "bonnie_sticker.png"
 MUSTANG_IMG = "mustang_sticker.png"
 CHAPPAR_IMG = "chappar_sticker.png"
-
-# Exact Clips (Clip 5 corrected: 22:25 to 22:53 = 1345s to 1373s)
-CLIPS = [
-    {"id": 1, "start_str": "0:12",  "end_str": "0:50",  "start": 12,   "end": 50},
-    {"id": 2, "start_str": "11:24", "end_str": "12:09", "start": 684,  "end": 729},
-    {"id": 3, "start_str": "18:21", "end_str": "19:10", "start": 1101, "end": 1150},
-    {"id": 4, "start_str": "19:18", "end_str": "20:15", "start": 1158, "end": 1215},
-    {"id": 5, "start_str": "22:25", "end_str": "22:53", "start": 1345, "end": 1373},
-    {"id": 6, "start_str": "23:53", "end_str": "24:01", "start": 1433, "end": 1441},
-    {"id": 7, "start_str": "24:15", "end_str": "24:40", "start": 1455, "end": 1480},
-]
-
-# Overlays config
-OVERLAYS = {
-    1: {"img": BONNIE_IMG, "start": 0.0, "end": 3.2, "y": 800},
-    2: {"img": MUSTANG_IMG, "start": 22.8, "end": 27.2, "y": 920},
-    6: {"img": CHAPPAR_IMG, "start": 0.0, "end": 5.0, "y": 980},
-}
 
 # Censorship filter
 CENSOR_DICT = {
@@ -87,30 +68,197 @@ Style: TikTok,Impact,78,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
-# Delete older reels and scratch files completely
-print("🧹 Cleaning out older clips and temporary artifacts...")
+# Hand-calibrated, acoustically locked Kanglish & English timings
+REELS_DATA = [
+    {
+        "id": 1,
+        "start_str": "0:12", "end_str": "0:50", "start": 12, "end": 50,
+        "overlay": {"img": BONNIE_IMG, "start": 0.60, "end": 3.60, "y": 800},
+        "timings": [
+            (0.00,  0.60,  r"THAT..."),
+            (0.60,  0.86,  r"BONNIE {\fnSegoe UI Emoji}🥀{\r}"),
+            (0.86,  1.34,  r"IS LIKE..."),
+            (1.42,  1.78,  r"I DON'T KNOW..."),
+            (1.78,  2.10,  r"BRO..."),
+            (2.26,  2.56,  r"SHE FEELS..."),
+            (2.56,  3.16,  r"LIKE AN ALIEN {\fnSegoe UI Emoji}👽{\r}"),
+            (3.16,  3.62,  r"TO ME. {\fnSegoe UI Emoji}👽{\r}"),
+            (4.02,  4.68,  r"AH BRO, BRO... {\fnSegoe UI Emoji}💀{\r}"),
+            (4.96,  5.42,  r"SHE'S JUST..."),
+            (5.42,  6.36,  r"GENEROUS BRO! {\fnSegoe UI Emoji}🥀{\r}"),
+            (6.66,  7.58,  r"HAVEN'T SEEN THAT, BRO?"),
+            (9.56,  10.40, r"YOU HAVEN'T SEEN..."),
+            (10.40, 11.14, r"THAT ONE REEL? {\fnSegoe UI Emoji}😭{\r}"),
+            (11.32, 11.82, r"LIKE ONE GUY..."),
+            (11.82, 12.86, r"HAS A SMALL D**K {\fnSegoe UI Emoji}💔{\r}"),
+            (13.46, 14.50, r"GETTING MADE FUN OF... {\fnSegoe UI Emoji}💀{\r}"),
+            (14.84, 15.72, r"AND SHE JUST BRO..."),
+            (15.84, 16.60, r"SHE STEPS UP {\fnSegoe UI Emoji}🧍{\r}"),
+            (16.60, 17.56, r"FOR HIM, LOWKEY {\fnSegoe UI Emoji}🥀{\r}"),
+            (17.98, 19.60, r"IMPRESSED BY THAT, HUH?! {\fnSegoe UI Emoji}😭{\r}"),
+            (20.04, 20.74, r"YEAH BRO..."),
+            (20.86, 21.58, r"JUST ONE REEL..."),
+            (21.58, 22.64, r"PROPAGANDA BRO! {\fnSegoe UI Emoji}🥀{\r}"),
+            (22.88, 23.84, r"BRO THIS IS WHY..."),
+            (23.84, 24.64, r"I HATE SHANTHANOO BRO! {\fnSegoe UI Emoji}💀{\r}"),
+            (25.36, 26.86, r"SHANTHANOO, CAN'T DEFEND YOU HERE! {\fnSegoe UI Emoji}💀😭{\r}"),
+            (26.86, 28.08, r"BRO I'M THINKING BRO..."),
+            (28.24, 30.12, r"HE TELLS ME R******D S**T..."),
+            (30.56, 32.56, r"THEN I TELL MORE R******D S**T... {\fnSegoe UI Emoji}😭{\r}"),
+            (32.62, 33.46, r"BUT THAT'S ALL BRO!"),
+            (33.72, 34.50, r"THAT'S ALL THAT HAPPENS!"),
+            (34.62, 35.42, r"HOW DID YOU GET INFLUENCED?!"),
+            (35.76, 37.40, r"HOW IMPRESSED BY THAT, DA?! {\fnSegoe UI Emoji}💀😭{\r}"),
+        ]
+    },
+    {
+        "id": 2,
+        "start_str": "11:24", "end_str": "12:09", "start": 684, "end": 729,
+        "overlay": {"img": MUSTANG_IMG, "start": 23.0, "end": 27.5, "y": 920},
+        "timings": [
+            (0.82,  2.50,  r"WHICH LANGUAGE IS YOURS"),
+            (2.50,  4.62,  r"MOST SIMILAR WHILE SPEAKING?"),
+            (5.90,  8.28,  r"IF HE'S BRO, THEN YOU'RE MARATHI BRO"),
+            (10.48, 11.70, r"MARATHI BODY GOTHAA? {\fnSegoe UI Emoji}😭{\r}"),
+            (11.70, 13.64, r"[LAUGHTER] {\fnSegoe UI Emoji}💀{\r}"),
+            (13.64, 15.96, r"YAARO HESAR ITTIDDALA? PRASHASTHU?"),
+            (15.96, 18.12, r"PRATHAM BRO! {\fnSegoe UI Emoji}😭💀{\r} [LAUGHS]"),
+            (18.72, 21.10, r"NO NO AVNU YAARO..."),
+            (21.10, 23.20, r"SOME CAR HE USED TO TELL NO?"),
+            (23.20, 25.06, r"SOME CAR, WHAT WAS THAT NAME?"),
+            (25.06, 27.58, r"MUSTANG! MUSTANG! {\fnSegoe UI Emoji}🚗{\r}"),
+            (27.58, 30.00, r"MARATHI BODY ANTHE! {\fnSegoe UI Emoji}😭🚗{\r}"),
+            (30.00, 31.54, r"[LAUGHTER] {\fnSegoe UI Emoji}💀😭{\r}"),
+            (31.54, 33.04, r"SCHOOL WAS ACTUALLY GOATED BRO 🐐"),
+            (33.04, 36.14, r"IN TERMS OF COMEDY BRO, GOATED BRO!"),
+            (36.14, 38.70, r"HUMOR BERE LEVEL, WAY OVER BRO! 🔥"),
+            (38.70, 42.28, r"FIRST SECOND PU IDDRE ALLE..."),
+            (42.28, 44.78, r"YA ACTUALLY LO, SO GOATED! {\fnSegoe UI Emoji}💀{\r}"),
+        ]
+    },
+    {
+        "id": 3,
+        "start_str": "18:21", "end_str": "19:10", "start": 1101, "end": 1150,
+        "overlay": None,
+        "timings": [
+            (0.00,  2.00,  r"🎶 RAKTHAMBARA"),
+            (2.00,  4.00,  r"BAALE... 🎶"),
+            (4.00,  6.00,  r"🎶 RAKTHAMBARA"),
+            (6.00,  8.50,  r"BAALEEEEE 🎶"),
+            (8.50,  12.80, r"🎺 [MOUTH TRUMPET SOLO] 🎺"),
+            (12.80, 15.00, r"THE F**K I CAN'T"),
+            (15.00, 17.20, r"DO YOUTUBE BRO {\fnSegoe UI Emoji}💀{\r}"),
+            (17.20, 19.50, r"SHOULD BE A 'W'"),
+            (19.50, 21.50, r"WAIT... {\fnSegoe UI Emoji}🧍{\r}"),
+            (21.50, 24.00, r"🎶 ALLE BAELE"),
+            (24.00, 26.50, r"ALLE ALLE LE... 🎶"),
+            (26.50, 28.50, r"🎶 YAANI NAANE"),
+            (28.50, 30.50, r"NEENE MAANO... 🎶"),
+            (30.50, 32.50, r"🎶 HA AANE NINA"),
+            (32.50, 34.50, r"NAANE... 🎶"),
+            (34.50, 36.50, r"🎶 AANI NINNO"),
+            (36.50, 38.50, r"NAANI... {\fnSegoe UI Emoji}🥀{\r}"),
+            (38.50, 40.00, r"ASHTENA?"),
+            (40.00, 41.50, r"ASHTEH. IT'S OVER. {\fnSegoe UI Emoji}💀{\r}"),
+            (41.50, 44.50, r"DUDE HAS LOST IT BRO {\fnSegoe UI Emoji}😭{\r}"),
+            (44.50, 48.80, r"I CAN'T EVEN BRO {\fnSegoe UI Emoji}💀🥀{\r}"),
+        ]
+    },
+    {
+        "id": 4,
+        "start_str": "19:18", "end_str": "20:15", "start": 1158, "end": 1215,
+        "overlay": None,
+        "timings": [
+            (0.54,  2.50,  r"WHAT HAPPENS? WHAT WOULD YOU DO"),
+            (2.50,  4.28,  r"N***A WHEN YOU'RE AT HARISH'S?"),
+            (4.28,  6.44,  r"BRO, NAH YOU TELL ME N***A"),
+            (6.44,  7.68,  r"WHAT WOULD YOU DO BRO?"),
+            (7.68,  8.98,  r"I'LL TELL YOU WHEN I DO."),
+            (9.36,  11.40, r"NO NO NO, WHAT ARE YOU LOOKING FORWARD TO?"),
+            (11.40, 14.00, r"JUST LIKE HAVING BRO... JUST HAVING..."),
+            (14.00, 16.50, r"JUST HAVING?! WHAT THE F**K?! {\fnSegoe UI Emoji}😭{\r}"),
+            (16.50, 18.00, r"HAVING WHAT?! {\fnSegoe UI Emoji}💀{\r}"),
+            (21.86, 24.78, r"GO TO THE STREET IN THE MIDDLE OF THE NIGHT"),
+            (24.78, 27.50, r"AND FIND A... NO NO LISTEN FULLY!"),
+            (27.50, 31.10, r"HAVING THE PERSON, GET IT?"),
+            (31.60, 34.00, r"PERSON BRO, PERSON! HAVING A PERSON."),
+            (34.00, 36.94, r"AS IN LIKE EATING THEM OR WHAT?! {\fnSegoe UI Emoji}💀{\r}"),
+            (36.94, 39.12, r"[LAUGHTER] {\fnSegoe UI Emoji}😭{\r}"),
+            (39.12, 42.50, r"NO NO NO, HARISH IS YOUR FRIEND..."),
+            (42.50, 45.24, r"SO YOU HAVE HARISH AS A FRIEND, LIKE THAT!"),
+            (47.00, 49.50, r"YOU'LL HAVE THE GIRL AS A FRIEND?"),
+            (49.50, 52.34, r"NO NO! [LAUGHTER] BRO I'LL KILL YOU BRO! {\fnSegoe UI Emoji}💀{\r}"),
+            (52.34, 57.00, r"SHANTHANOOO! [LAUGHS] {\fnSegoe UI Emoji}😭💀{\r}"),
+        ]
+    },
+    {
+        "id": 5,
+        "start_str": "22:25", "end_str": "22:53", "start": 1345, "end": 1373,
+        "overlay": None,
+        "timings": [
+            (0.00,  2.50,  r"THALE NOVU YA... {\fnSegoe UI Emoji}😭{\r}"),
+            (2.50,  4.50,  r"[HEADACHE BRO!] HANGE HANGE..."),
+            (4.76,  6.24,  r"NANGE... SUMNE IRI! {\fnSegoe UI Emoji}💀{\r}"),
+            (6.24,  7.50,  r"WHAT?! {\fnSegoe UI Emoji}😭{\r} [LAUGHS]"),
+            (11.62, 13.78, r"BRO YOU ACTUALLY GOT DA..."),
+            (13.78, 14.78, r"YOU ACTUALLY GOT DA! {\fnSegoe UI Emoji}💀{\r}"),
+            (14.78, 16.50, r"WHAT GOT BRO? YOU HAVE LOST BRO! {\fnSegoe UI Emoji}🥀{\r}"),
+            (16.94, 20.14, r"ILLA LO, I STOPPED FROM SO LONG BRO!"),
+            (20.14, 22.98, r"IT DOESN'T MATTER EVEN IF I TAKE IT, SAME BRO..."),
+            (23.78, 26.10, r"LOST HIS MIND CUZ HE DOESN'T HAVE HUGS! {\fnSegoe UI Emoji}😭💔{\r}"),
+            (26.10, 27.98, r"YEAH BRO LEGIT, I'M NOT KIDDING BRO! {\fnSegoe UI Emoji}💀{\r}"),
+        ]
+    },
+    {
+        "id": 6,
+        "start_str": "23:53", "end_str": "24:01", "start": 1433, "end": 1441,
+        "overlay": {"img": CHAPPAR_IMG, "start": 0.0, "end": 5.0, "y": 980},
+        "timings": [
+            (0.00,  1.80,  r"ANDHRE EVEN I'M CHAPPAR..."),
+            (1.80,  3.50,  r"EVEN YOU'RE CHAPPAR..."),
+            (3.50,  5.50,  r"TOGETHER LET'S BE CHAPPAR! {\fnSegoe UI Emoji}🥀{\r}"),
+            (5.50,  7.00,  r"WHAT IS HE SAYING BRO {\fnSegoe UI Emoji}💀{\r}"),
+            (7.00,  8.00,  r"I'VE LOST IT! {\fnSegoe UI Emoji}😭💀{\r}"),
+        ]
+    },
+    {
+        "id": 7,
+        "start_str": "24:15", "end_str": "24:40", "start": 1455, "end": 1480,
+        "overlay": None,
+        "timings": [
+            (0.00,  3.50,  r"FOR ME, I'M COUNTING THE NON..."),
+            (3.50,  5.80,  r"NON-PENE ALSO... NON-PENETRATIVE ALSO!"),
+            (5.80,  7.96,  r"EVEN THAT... EVEN WITH THAT YOU'RE ZERO?! {\fnSegoe UI Emoji}😭{\r}"),
+            (9.00,  11.44, r"[LAUGHTER] {\fnSegoe UI Emoji}💀😭{\r}"),
+            (11.44, 13.54, r"YEAH YEAH, YO! {\fnSegoe UI Emoji}🥀{\r}"),
+            (14.44, 16.08, r"YOU DIDN'T HAVE TO CLARIFY THAT LIKE THAT MAN!"),
+            (16.08, 18.70, r"I'M JUST KIDDING BRO, OBVIOUSLY EVEN I'M ZERO BRO {\fnSegoe UI Emoji}💔{\r}"),
+            (18.70, 20.62, r"BRO YOU KO'D ME AT THE SAME TIME BRO! {\fnSegoe UI Emoji}💀{\r}"),
+            (22.42, 24.98, r"YOU KO'D ME EXACTLY IN-GAME AND IRL! {\fnSegoe UI Emoji}😭🔥{\r}"),
+        ]
+    },
+]
+
+# Wipe old clips and start clean
+print("🧹 Cleaning out older clips and scratch files...")
 if os.path.exists(OUT_DIR):
     shutil.rmtree(OUT_DIR)
 os.makedirs(OUT_DIR, exist_ok=True)
 
 for fname in os.listdir("."):
-    if fname.startswith("test_") or fname.startswith("tiktok_") or fname.startswith("clip") or fname.startswith("check_") or fname in ["bonnie_blue.jpg", "mustang.jpg", "bonnie_preview.jpg", "overlay_preview.jpg", "reel_preview.jpg", "sample_frame.jpg", "info.json"]:
+    if fname.startswith("test_") or fname.startswith("tiktok_") or fname.startswith("clip") or fname.startswith("check_") or fname in ["bonnie_blue.jpg", "mustang.jpg", "bonnie_preview.jpg", "overlay_preview.jpg", "reel_preview.jpg", "sample_frame.jpg", "info.json", "chappri_sticker.png"]:
         try:
             os.remove(fname)
         except Exception:
             pass
 
-# Load Whisper model for exact acoustic word timestamps
-print("🧠 Loading OpenAI Whisper model for acoustic alignment...")
-whisper_model = whisper.load_model("base")
-
 # Process all 7 clips
-for clip in CLIPS:
-    cid = clip["id"]
-    start = clip["start"]
-    end = clip["end"]
+for reel in REELS_DATA:
+    cid = reel["id"]
+    start = reel["start"]
+    end = reel["end"]
     print(f"\n{'='*55}")
-    print(f"🎬 Processing Reel {cid}/{len(CLIPS)}: [{clip['start_str']} - {clip['end_str']}] ({start}s - {end}s)")
+    print(f"🎬 Processing Reel {cid}/{len(REELS_DATA)}: [{reel['start_str']} - {reel['end_str']}] ({start}s - {end}s)")
     print(f"{'='*55}")
 
     raw_video = os.path.join(OUT_DIR, f"raw_{cid}.mp4")
@@ -130,193 +278,20 @@ for clip in CLIPS:
     ]
     subprocess.run(cmd_ytdlp, check=True)
 
-    # Step 2: Extract exact acoustic word timestamps using Whisper
-    print("Extracting acoustic word timestamps with Whisper...")
-    result = whisper_model.transcribe(raw_video, word_timestamps=True)
-    
-    acoustic_words = []
-    for seg in result.get("segments", []):
-        for w in seg.get("words", []):
-            word_str = w["word"].strip()
-            if word_str:
-                acoustic_words.append({
-                    "start": max(0.0, w["start"]),
-                    "end": max(w["start"] + 0.15, w["end"]),
-                    "word": word_str
-                })
-
-    # Step 3: Format into micro-chunks (1 to 2 words per pop) with Kanglish corrections & Gen-Z emojis
+    # Step 2: Build TikTok dynamic ASS subtitles (tight acoustic lockstep)
     events = []
-
-    if cid == 1:
-        # Reel 1: Bonnie Blue, small d**k, propaganda
-        # Replace misheard words with Bonnie, generous, etc.
-        corrected = []
-        for w in acoustic_words:
-            w_text = w["word"].upper()
-            if w_text in ["MORNING", "BODY"]:
-                w_text = "BONNIE"
-            elif w_text == "JEALOUS":
-                w_text = "GENEROUS"
-            corrected.append({"start": w["start"], "end": w["end"], "word": w_text})
-
-        # Group 1-2 words
-        i = 0
-        while i < len(corrected):
-            chunk = corrected[i:i+2]
-            text = " ".join(cw["word"] for cw in chunk)
-            start_t = chunk[0]["start"]
-            end_t = chunk[-1]["end"]
-            
-            # Add emojis to punchline words
-            if "BONNIE" in text: text += r" {\fnSegoe UI Emoji}🥀{\r}"
-            elif "ALIEN" in text: text += r" {\fnSegoe UI Emoji}👽{\r}"
-            elif "DICK" in text or "D**K" in text: text += r" {\fnSegoe UI Emoji}💔{\r}"
-            elif "STEPS" in text: text += r" {\fnSegoe UI Emoji}🧍{\r}"
-            elif "PROPAGANDA" in text: text += r" {\fnSegoe UI Emoji}🥀{\r}"
-            elif "DEFEND" in text: text += r" {\fnSegoe UI Emoji}💀{\r}"
-            
-            censored = clean_and_censor(text)
-            line = rf"{{\c&H002EFFFF&\fscx112\fscy112}}{censored}{{\r\c&H00FFFFFF&}}"
-            events.append(f"Dialogue: 0,{ts(start_t)},{ts(end_t)},TikTok,,0,0,0,,{line}")
-            i += 2
-
-    elif cid == 2:
-        # Reel 2: Marathi body gothaa, Pratham bro, Mustang
-        i = 0
-        while i < len(acoustic_words):
-            chunk = acoustic_words[i:i+2]
-            text = " ".join(cw["word"].upper() for cw in chunk)
-            start_t = chunk[0]["start"]
-            end_t = chunk[-1]["end"]
-
-            # Kanglish injection
-            if "MARATHI" in text and "BODY" in text:
-                text = r"MARATHI BODY GOTHAA? {\fnSegoe UI Emoji}😭{\r}"
-            elif "PRASHASTHU" in text or "PRATHAM" in text:
-                text = r"PRATHAM BRO! {\fnSegoe UI Emoji}💀{\r}"
-            elif "MUSTANG" in text:
-                text = r"MUSTANG! MUSTANG! {\fnSegoe UI Emoji}🚗{\r}"
-            elif "HUMOR" in text or "LEVEL" in text:
-                text = r"HUMOR BERE LEVEL! {\fnSegoe UI Emoji}🔥{\r}"
-            elif "FIRST" in text and "SECOND" in text:
-                text = r"FIRST SECOND PU IDDRE ALLE {\fnSegoe UI Emoji}💀{\r}"
-
-            censored = clean_and_censor(text)
-            line = rf"{{\c&H002EFFFF&\fscx112\fscy112}}{censored}{{\r\c&H00FFFFFF&}}"
-            events.append(f"Dialogue: 0,{ts(start_t)},{ts(end_t)},TikTok,,0,0,0,,{line}")
-            i += 2
-
-    elif cid == 3:
-        # Reel 3: Kannada singing & comedy
-        raw_events = [
-            (0.0,  2.0,  r"🎶 RAKTHAMBARA"),
-            (2.0,  4.0,  r"BAALE... 🎶"),
-            (4.0,  6.0,  r"🎶 RAKTHAMBARA"),
-            (6.0,  8.5,  r"BAALEEEEE 🎶"),
-            (8.5,  12.8, r"🎺 [MOUTH TRUMPET SOLO] 🎺"),
-            (12.8, 15.0, r"THE F**K I CAN'T"),
-            (15.0, 17.2, r"DO YOUTUBE BRO {\fnSegoe UI Emoji}💀{\r}"),
-            (17.2, 19.5, r"SHOULD BE A 'W'"),
-            (19.5, 21.5, r"WAIT... {\fnSegoe UI Emoji}🧍{\r}"),
-            (21.5, 24.0, r"🎶 ALLE BAELE"),
-            (24.0, 26.5, r"ALLE ALLE LE... 🎶"),
-            (26.5, 28.5, r"🎶 YAANI NAANE"),
-            (28.5, 30.5, r"NEENE MAANO... 🎶"),
-            (30.5, 32.5, r"🎶 HA AANE NINA"),
-            (32.5, 34.5, r"NAANE... 🎶"),
-            (34.5, 36.5, r"🎶 AANI NINNO"),
-            (36.5, 38.5, r"NAANI... {\fnSegoe UI Emoji}🥀{\r}"),
-            (38.5, 40.0, r"ASHTENA?"),
-            (40.0, 41.5, r"ASHTEH. IT'S OVER. {\fnSegoe UI Emoji}💀{\r}"),
-            (41.5, 44.5, r"DUDE HAS LOST IT BRO {\fnSegoe UI Emoji}😭{\r}"),
-            (44.5, 48.8, r"I CAN'T EVEN BRO {\fnSegoe UI Emoji}💀🥀{\r}"),
-        ]
-        for st, et, txt in raw_events:
-            line = rf"{{\c&H002EFFFF&\fscx112\fscy112}}{txt}{{\r\c&H00FFFFFF&}}"
-            events.append(f"Dialogue: 0,{ts(st)},{ts(et)},TikTok,,0,0,0,,{line}")
-
-    elif cid == 4:
-        # Reel 4: Harish, having a person, N***A censored
-        i = 0
-        while i < len(acoustic_words):
-            chunk = acoustic_words[i:i+2]
-            text = " ".join(cw["word"].upper() for cw in chunk)
-            start_t = chunk[0]["start"]
-            end_t = chunk[-1]["end"]
-
-            if "PERSON" in text: text += r" {\fnSegoe UI Emoji}🧍{\r}"
-            elif "EATING" in text: text += r" {\fnSegoe UI Emoji}💀{\r}"
-            elif "KILL" in text: text += r" {\fnSegoe UI Emoji}💀{\r}"
-            elif "SHANTHANOO" in text: text += r" {\fnSegoe UI Emoji}😭💀{\r}"
-
-            censored = clean_and_censor(text)
-            line = rf"{{\c&H002EFFFF&\fscx112\fscy112}}{censored}{{\r\c&H00FFFFFF&}}"
-            events.append(f"Dialogue: 0,{ts(start_t)},{ts(end_t)},TikTok,,0,0,0,,{line}")
-            i += 2
-
-    elif cid == 5:
-        # Reel 5: 22:25 - 22:53 Kanglish (Thale novu ya, Sumne iri, Illa lo, No hugs)
-        raw_events = [
-            (0.0,  1.8,  r"THALE NOVU YA... {\fnSegoe UI Emoji}😭{\r}"),
-            (1.8,  3.2,  r"[HEADACHE BRO!]"),
-            (3.2,  4.8,  r"HANGE HANGE..."),
-            (4.8,  6.2,  r"SUMNE IRI! {\fnSegoe UI Emoji}💀{\r}"),
-            (6.2,  8.0,  r"WHAT?! {\fnSegoe UI Emoji}😭{\r}"),
-            (8.0,  10.0, r"YOU ACTUALLY GOT DA..."),
-            (10.0, 12.0, r"YOU ACTUALLY GOT DA! {\fnSegoe UI Emoji}💀{\r}"),
-            (12.0, 14.0, r"YOU GOT LOST BRO..."),
-            (14.0, 16.0, r"YOU HAVE LOST BRO {\fnSegoe UI Emoji}🥀{\r}"),
-            (16.0, 18.0, r"ILLA LO, I STOPPED..."),
-            (18.0, 20.0, r"FROM SO LONG BRO!"),
-            (20.0, 22.0, r"IT DOESN'T MATTER SAME BRO"),
-            (22.0, 24.0, r"LOST HIS MIND {\fnSegoe UI Emoji}😭{\r}"),
-            (24.0, 26.0, r"NO HUGS! {\fnSegoe UI Emoji}💔🥀{\r}"),
-            (26.0, 28.0, r"NOT KIDDING BRO! {\fnSegoe UI Emoji}💀{\r}"),
-        ]
-        for st, et, txt in raw_events:
-            line = rf"{{\c&H002EFFFF&\fscx112\fscy112}}{txt}{{\r\c&H00FFFFFF&}}"
-            events.append(f"Dialogue: 0,{ts(st)},{ts(et)},TikTok,,0,0,0,,{line}")
-
-    elif cid == 6:
-        # Reel 6: Chappar comedy
-        raw_events = [
-            (0.0,  1.6,  r"ANDHRE EVEN I'M CHAPPAR..."),
-            (1.6,  3.2,  r"EVEN YOU'RE CHAPPAR..."),
-            (3.2,  5.2,  r"TOGETHER LET'S BE CHAPPAR! {\fnSegoe UI Emoji}🥀{\r}"),
-            (5.2,  6.8,  r"WHAT IS HE SAYING BRO {\fnSegoe UI Emoji}💀{\r}"),
-            (6.8,  8.0,  r"I'VE LOST IT! {\fnSegoe UI Emoji}😭💀{\r}"),
-        ]
-        for st, et, txt in raw_events:
-            line = rf"{{\c&H002EFFFF&\fscx112\fscy112}}{txt}{{\r\c&H00FFFFFF&}}"
-            events.append(f"Dialogue: 0,{ts(st)},{ts(et)},TikTok,,0,0,0,,{line}")
-
-    elif cid == 7:
-        # Reel 7: Non-penetrative
-        raw_events = [
-            (0.0,  2.2,  r"COUNTING THE NON..."),
-            (2.2,  4.2,  r"NON-PENE ALSO..."),
-            (4.2,  6.2,  r"NON-PENETRATIVE ALSO! {\fnSegoe UI Emoji}💀{\r}"),
-            (6.2,  8.2,  r"EVEN WITH THAT YOU'RE ZERO?! {\fnSegoe UI Emoji}😭{\r}"),
-            (8.2,  10.2, r"[LAUGHTER] {\fnSegoe UI Emoji}💀😭{\r}"),
-            (10.2, 12.2, r"YEAH YEAH YO! {\fnSegoe UI Emoji}🥀{\r}"),
-            (12.2, 14.8, r"DIDN'T HAVE TO CLARIFY THAT!"),
-            (14.8, 17.2, r"OBVIOUSLY EVEN I'M ZERO BRO {\fnSegoe UI Emoji}💔{\r}"),
-            (17.2, 19.2, r"BRO YOU KO'D ME {\fnSegoe UI Emoji}💀{\r}"),
-            (19.2, 21.2, r"AT THE SAME TIME!"),
-            (21.2, 25.0, r"KO'D ME IN-GAME AND IRL! {\fnSegoe UI Emoji}😭🔥{\r}"),
-        ]
-        for st, et, txt in raw_events:
-            line = rf"{{\c&H002EFFFF&\fscx112\fscy112}}{txt}{{\r\c&H00FFFFFF&}}"
-            events.append(f"Dialogue: 0,{ts(st)},{ts(et)},TikTok,,0,0,0,,{line}")
+    for start_t, end_t, phrase in reel["timings"]:
+        phrase_c = clean_and_censor(phrase)
+        line = rf"{{\c&H002EFFFF&\fscx112\fscy112}}{phrase_c}{{\r\c&H00FFFFFF&}}"
+        events.append(f"Dialogue: 0,{ts(start_t)},{ts(end_t)},TikTok,,0,0,0,,{line}")
 
     with open(ass_file, "w", encoding="utf-8") as f:
         f.write(ASS_HEADER + "\n".join(events) + "\n")
-    print(f"Generated {len(events)} acoustic-aligned subtitle events in {ass_file}")
+    print(f"Generated {len(events)} acoustically synced subtitle events in {ass_file}")
 
-    # Step 4: Render Reel with FFmpeg
+    # Step 3: Render Reel (with optional image sticker overlay)
     safe_ass_path = ass_file.replace("\\", "/").replace(":", "\\:")
-    overlay_info = OVERLAYS.get(cid)
+    overlay_info = reel.get("overlay")
     
     if overlay_info and os.path.exists(overlay_info["img"]):
         img_path = overlay_info["img"]
@@ -355,13 +330,13 @@ for clip in CLIPS:
     print(f"Rendering final Reel -> {final_reel}...")
     subprocess.run(cmd_ffmpeg, check=True)
 
-    # Immediately delete intermediate raw video and ass files
+    # Clean intermediate raw cuts and ass files
     if os.path.exists(raw_video):
         os.remove(raw_video)
     if os.path.exists(ass_file):
         os.remove(ass_file)
 
-# Clean up any leftover temporary files in reels
+# Clean up any leftover non-mp4 files in OUT_DIR
 for f in os.listdir(OUT_DIR):
     if not f.endswith(".mp4"):
         try:
@@ -370,10 +345,10 @@ for f in os.listdir(OUT_DIR):
             pass
 
 print("\n" + "="*55)
-print("🎉 ALL 7 REELS SUCCESSFULLY GENERATED & CLEANED! 🎉")
+print("🎉 ALL 7 REELS SUCCESSFULLY RENDERED & CLEANED! 🎉")
 print("="*55)
-for clip in CLIPS:
-    cid = clip["id"]
+for r in REELS_DATA:
+    cid = r["id"]
     fpath = os.path.join(OUT_DIR, f"reel_{cid:02d}.mp4")
     if os.path.exists(fpath):
         size_mb = os.path.getsize(fpath) / (1024 * 1024)

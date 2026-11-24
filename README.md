@@ -88,7 +88,17 @@ python clipper.py render "8mb.video-iaT-KJDaQyQ1.mp4" \
   --subs "bulbul.ass"
 ```
 
-#### Layout Mode B: `center` (Direct 9:16 Center Crop)
+#### Layout Mode B: `discord_game` (Top Gameplay + Center Discord Overlay Card)
+Ideal for Discord calls + live gameplay (e.g. Brawlhalla / Valorant). Keeps the main game on top (`960x540` at `y:130`) and centers the enlarged Discord voice overlay card (`440x476` at `y:710`) with subtitles below in the safe zone:
+```bash
+python clipper.py render "Harish girl rekt.mp4" \
+  --out "reels/harish_reel.mp4" \
+  --layout discord_game \
+  --cut 0:00-0:11,0:16-0:19,0:26-0:45 \
+  --subs "subtitles.ass"
+```
+
+#### Layout Mode C: `center` (Direct 9:16 Center Crop)
 Best for 1v1 fights, agent select screens, or action centered on screen:
 ```bash
 python clipper.py render "gameplay.mp4" \

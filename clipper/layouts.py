@@ -69,3 +69,30 @@ def create_banner_and_sticker_template(
 
     overlay.save(out_path)
     return out_path
+
+def create_discord_game_template(
+    out_path: str,
+    game_box: tuple = (60, 130, 960, 540),
+    discord_box: tuple = (305, 695, 470, 506)
+) -> str:
+    """
+    Generate an overlay template for a dual-stream layout:
+    - Main game frame on top (with rounded white border)
+    - Discord voice overlay card in center (with Discord blurple border)
+    """
+    overlay = Image.new('RGBA', (CANVAS_WIDTH, CANVAS_HEIGHT), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    # Main game border
+    gx, gy, gw, gh = game_box
+    draw.rounded_rectangle([gx - 3, gy - 3, gx + gw + 3, gy + gh + 3],
+                           radius=18, outline=(255, 255, 255, 220), width=6)
+
+    # Discord card border
+    dx, dy, dw, dh = discord_box
+    draw.rounded_rectangle([dx - 3, dy - 3, dx + dw + 3, dy + dh + 3],
+                           radius=20, outline=(88, 101, 242, 255), width=6)
+
+    overlay.save(out_path)
+    return out_path
+

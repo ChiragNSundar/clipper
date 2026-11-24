@@ -7,6 +7,7 @@ Unified toolkit for clipping, transcribing, and rendering 9:16 vertical reels.
 import os
 import sys
 import json
+import tempfile
 import argparse
 from clipper import (
     render_reel,
@@ -114,7 +115,7 @@ def main():
     p_render = subparsers.add_parser("render", help="Render video into 9:16 vertical Reel")
     p_render.add_argument("input", help="Input video path or YouTube URL")
     p_render.add_argument("--out", "-o", required=True, help="Output reel .mp4 path")
-    p_render.add_argument("--layout", "-l", choices=["center", "ambient", "split"], default="center", help="Layout style")
+    p_render.add_argument("--layout", "-l", choices=["center", "ambient", "split", "discord_game"], default="center", help="Layout style")
     p_render.add_argument("--cut", "-c", help="Cut time slice e.g. 0:15-0:45 or multi-cut 0:23-0:35,0:56-1:19")
     p_render.add_argument("--subs", "-s", help="Path to existing .ass subtitle file")
     p_render.add_argument("--auto-subs", action="store_true", help="Auto-transcribe and burn subtitles")
@@ -145,15 +146,14 @@ def main():
         run_batch_file(args.config)
 
     elif args.command == "transcribe":
-        audio_tmp = "temp_audio.wav"
-        print(f"[Clipper] Extracting audio from {args.input}...")
-        extract_audio(args.input, audio_tmp)
-        print(f"[Clipper] Transcribing with Whisper '{args.model}' + Regional Slang Glossary...")
-        chunks = transcribe_audio(audio_tmp, model_name=args.model)
-        build_ass_script(chunks, args.out, margin_v=args.margin_v)
-        if os.path.exists(audio_tmp):
-            os.remove(audio_tmp)
-        print(f"[Clipper Success] Saved subtitles to {args.out}")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            audio_tmp = os.path.join(temp_dir, "temp_audio.wav")
+            print(f"[Clipper] Extracting audio from {args.input}...")
+            extract_audio(args.input, audio_tmp)
+            print(f"[Clipper] Transcribing with Whisper '{args.model}' + Regional Slang Glossary...")
+            chunks = transcribe_audio(audio_tmp, model_name=args.model)
+            build_ass_script(chunks, args.out, margin_v=args.margin_v)
+            print(f"[Clipper Success] Saved subtitles to {args.out}")
 
     elif args.command == "render":
         cuts = parse_time_slice(args.cut) if args.cut else []
@@ -163,38 +163,31 @@ def main():
         sub_file = args.subs
         s_time = parse_sticker_time(args.sticker_time)
 
-        if args.auto_subs and not sub_file:
-            audio_tmp = "temp_render_audio.wav"
-            print(f"[Clipper] Auto-transcribing audio from {args.input}...")
-            extract_audio(args.input, audio_tmp)
-            chunks = transcribe_audio(audio_tmp, model_name="base")
-            sub_file = "temp_auto_subs.ass"
-            build_ass_script(chunks, sub_file, margin_v=260)
-            if os.path.exists(audio_tmp):
-                os.remove(audio_tmp)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            if args.auto_subs and not sub_file:
+                audio_tmp = os.path.join(temp_dir, "temp_render_audio.wav")
+                print(f"[Clipper] Auto-transcribing audio from {args.input}...")
+                extract_audio(args.input, audio_tmp)
+                chunks = transcribe_audio(audio_tmp, model_name="base")
+                sub_file = os.path.join(temp_dir, "temp_auto_subs.ass")
+                build_ass_script(chunks, sub_file, margin_v=260)
 
-        render_reel(
-            input_video=args.input,
-            output_video=args.out,
-            layout=args.layout,
-            ass_subtitle_path=sub_file,
-            start_time=st,
-            duration=dur,
-            segments=multi_segs,
-            main_crop=args.main_crop,
-            main_scale=args.main_scale,
-            sec_crop=args.sec_crop,
-            sec_scale=args.sec_scale,
-            top_header=args.top_header,
-            sticker_path=args.sticker,
-            sticker_time=s_time
-        )
-
-        if args.auto_subs and sub_file and os.path.exists(sub_file):
-            try:
-                os.remove(sub_file)
-            except:
-                pass
+            render_reel(
+                input_video=args.input,
+                output_video=args.out,
+                layout=args.layout,
+                ass_subtitle_path=sub_file,
+                start_time=st,
+                duration=dur,
+                segments=multi_segs,
+                main_crop=args.main_crop,
+                main_scale=args.main_scale,
+                sec_crop=args.sec_crop,
+                sec_scale=args.sec_scale,
+                top_header=args.top_header,
+                sticker_path=args.sticker,
+                sticker_time=s_time
+            )
 
 if __name__ == "__main__":
     main()

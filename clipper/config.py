@@ -67,7 +67,7 @@ SLANG_CORRECTIONS = {
     "be muted": "mute mado",
     "raised": "Raze",
     "into your mouth": "into your mom",
-    "in your mouth": "in your mom",
+    "in your mouth": "into your mom",
     "cowed": "KO'd",
     "carr": "car",
     "chappri": "chappar",
@@ -77,13 +77,19 @@ SLANG_CORRECTIONS = {
     "mathadkiva": "mathadakkilva",
     "olle hudga": "olle hudga",
     "nodak chandag": "nodak chandag",
-    "preethi madak": "preethi madak"
+    "preethi madak": "preethi madak",
+    "lucy": "Lucid",
+    "ididyhalla": "idyella",
+    "iddidhyalla": "idyella",
+    "yaaro iddidhyalla": "yaaro idyella",
+    "yaaro idyella": "yaaro idyella",
 }
 
 # Regional vocabulary initial prompt for Whisper
 WHISPER_REGIONAL_PROMPT = (
     "Kannada, Kanglish, Hinglish, gaming slang. "
     "Mute mado, chappar, gothaa, anthe, sumne iri, maga, macha, bro, da. "
-    "Valorant, Raze, ults, lock-in, clutch. "
+    "Lucid, idyella, yaaro idyella, friend list names. "
+    "Valorant, Brawlhalla, Raze, ults, lock-in, clutch. "
     "Bulbul mathadakkilva, naa olle hudga alva, naa nodak chandag ilva, nan preethi madak ilva."
 )

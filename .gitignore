@@ -17,6 +17,14 @@ preview_*
 frame_*
 test_*
 check_*
+temp_*
+disc_*
+f_*
+part*
+c1_*
+*.jpg
+!stickers/*
+
 
 # Python caches and environments
 __pycache__/

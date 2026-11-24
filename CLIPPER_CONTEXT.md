@@ -38,6 +38,8 @@ Standard ASR engines (Whisper, Google Speech, etc.) default to English and suffe
 - **Naa olle hudga alva?** (ನಾ ಒಳ್ಳೆ ಹುಡ್ಗ ಅಲ್ವಾ?): *"Am I not a good boy?"* (Verse from *Bul Bul* song).
 - **Naa nodak chandag ilva?** (ನಾ ನೋಡಕ್ ಚಂದಾಗ್ ಇಲ್ವಾ?): *"Do I not look handsome?"* (Verse from *Bul Bul* song).
 - **Nan preethi madak ilva?** (ನನ್ ಪ್ರೀತಿ ಮಾಡಕ್ ಇಲ್ವಾ?): *"Won't you love me?"* (Verse from *Bul Bul* song).
+- **Yaaro idyella!** (ಯಾರೋ ಇದ್ಯಲ್ಲಾ!): *"Someone is there right?!"* (NEVER transcribe as English "ididyhalla" or "did he holler").
+- **Lucid**: Gamer / Discord teammate handle (NEVER transcribe as "Lucy" or "Blue").
 - **Yaaro hesar ittiddala?**: *"Someone named it right?"*.
 - **Lo / Da / Guru / Macha / Maga**: Regional informal address (*Bro / dude / homie*).
 - **PU**: Pre-University college (11th & 12th grade in Karnataka).
@@ -132,17 +134,20 @@ python clipper.py batch reels.json
 
 ---
 
-## 7. Workspace & Git Cleanliness
+## 7. Workspace Architecture & Zero Pollution (MANDATORY)
 
-- **Keep on Disk**:
-  - Final `.mp4` video reels inside `reels/`.
-  - Production scripts (`make_reels.py`).
-  - Persistent sticker assets (`*.png`).
-  - Context & rules guides (`CLIPPER_CONTEXT.md`, `.gemini/rules.md`, `.gitignore`).
-- **Always Delete**:
-  - Temporary audio (`*.wav`, `*.aac`, `*.mp3`).
-  - Temporary video parts (`*.part`, `part_*.mp4`, `raw_*.mp4`).
-  - Subtitle scripts (`*.ass`).
-  - Test scripts and image previews (`test_*`, `check_*`, `sample_*`, `val_*`).
-- **Git Hygiene**:
-  - All media outputs in `reels/` and temporary media files are excluded via `.gitignore`.
+- **NEVER create scratch `.py` scripts** (`test_*.py`, `check_*.py`, `transcribe_*.py`, `build_*.py`, etc.) in the workspace root.
+- **Universal Code First**: Add any new features, layout presets, or slang to the `clipper/` package directly and run through `clipper.py`.
+- **Use `tempfile.TemporaryDirectory()`**: All intermediate cuts, extracted audio files, concat lists, and templates must be created inside isolated system temporary directories that automatically clean up upon completion.
+- **Deliverables Only**: The only files permitted to be created in the repository are finished `.mp4` reels inside `reels/`.
+
+---
+
+## 8. High-Precision Transcription Protocol (How Subtitles Are Made 100% Accurate)
+
+1. **Contextual Prompt Priming**: Always inject Discord usernames (`Lucid`, etc.), regional terms (`idyella`, `mado`, etc.), and game terms into Whisper's `initial_prompt`. This prevents Whisper from hallucinating English words.
+2. **Model Scaling for Difficult Audio**: When background game audio, laughter, or heavy accents are present, `whisper base` hallucinates. Fall back to `small` or `medium` to accurately resolve acoustic phonetics.
+3. **Word-Level Onset Alignment**: Always transcribe with `word_timestamps=True` on isolated speech sections. Micro-chunk words to their exact physical speech onset times.
+4. **Speaker Attribution & Punchline Framing**: When a funny moment occurs (e.g. teammate snapping in Discord call), attribute the speaker (`[GIRL]: "N***A, SHUT THE F**K UP!"`) and the reaction (`SHE TOLD... "N***A, SHUT THE F**K UP", YO!`) to preserve comedic timing.
+5. **Censorship**: Strictly apply asterisks to vulgarity (`N***A`, `F**K`, `D**K`, `B***H`, `S**T`).
+

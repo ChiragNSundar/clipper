@@ -1,26 +1,41 @@
-# Clipper Video Production & Transcription Rules
+# Clipper Video Production, Architecture & Transcription Rules
 
-## 1. Zero-Tolerance for Phonetic Hallucination (Kannada / Kanglish / Regional Slang)
-- Do not let speech-to-text models force Indian regional languages (Kannada, Hindi, Tamil) into English words that sound vaguely similar.
-- Never transcribe:
-  - "Mute mado" as "4 mutes", "be muted", or "mute made". It is Kannada (ಮ್ಯೂಟ್ ಮಾಡು) meaning "Mute him/it".
-  - "Chappar" as "chappri". Use the authentic Kannada slang "Chappar".
-  - "Raze" as "raised". Cross-reference gaming visuals (Valorant agents: Raze, Yoru, Reyna, Sova, Jett).
-  - "Your mom" as "your mouth". Recognize roast and mom-joke banter.
-- Transcribe in Kanglish (Kannada + English) or Hinglish (Hindi + English) when spoken. Common words: *Gothaa?*, *Anthe*, *Thale novu*, *Sumne iri*, *Illa lo*, *Hange*, *Andhre*, *Bere level*, *Mado*, *Beda*, *Ashtena*.
+## 1. Zero-Pollution Workspace Architecture (STRICT)
+- **NEVER create one-off scratch scripts** (e.g. `test_*.py`, `check_*.py`, `transcribe_*.py`, `build_*.py`, `part*.wav`) in the project repository root.
+- **Always use the Universal Engine**: Modify only `clipper/` modules (`config.py`, `layouts.py`, `engine.py`, `subtitles.py`, `transcribe.py`) and invoke through `clipper.py` CLI or library calls.
+- **All temporary processing MUST use `tempfile.TemporaryDirectory()`**:
+  - Sliced video segments, audio extracts, temporary frames, and intermediate `.ass` files must live strictly in memory or in isolated system temp directories.
+  - Zero intermediate files should ever appear in VS Code's file tree or trigger untracked Git markers.
+- **Only Final Deliverables**: The only allowed new files are final rendered `.mp4` reels placed in `reels/`.
 
-## 2. Subtitle Pacing & Styling (Micro-Chunking)
-- Subtitles must be micro-chunked (1 to 2 words per card, at most 3 short words) locked to exact acoustic speech onsets. Never show words early.
-- Style: `Impact` font, size 78, 8px black outline, 3px shadow.
-- Active spoken words must pop in Neon Yellow (`&H002EFFFF`) with 115% scale (`\fscx115\fscy115`).
-- Emojis must use DirectWrite fallback: `{\fnSegoe UI Emoji}`.
-- Vertical safe margin: `MarginV: 450` to `550` (measured from bottom).
+## 2. High-Precision Transcription Protocol (How to Get 100% Subtitle Accuracy)
+Speech models like Whisper `base` will catastrophically hallucinate on overlapping voices, game audio, laughter, and Indian regional accents unless this exact protocol is followed:
+1. **Contextual Prompt Priming**: Always pass an `initial_prompt` with the authentic vocabulary, actual usernames from the Discord overlay (e.g., `Lucid`, not `Lucy`), and regional slang (e.g., `idyella`, `yaaro idyella`, `mute mado`, `chappar`). This shifts the model's language prior probability toward the actual terms.
+2. **Model Scaling for Difficult Audio**: When speech is quiet, accented, or overwhelmed by loud game SFX, use Whisper `medium` (or `small`). Fast `base` models should only be used on clear solo studio audio.
+3. **Word-Level Onset Alignment**: Always transcribe with `word_timestamps=True` on isolated speech sections. Group subtitles into 1-2 words per event locked to physical acoustic onsets. Never display words before they are spoken.
+4. **Speaker Attribution & Punchline Framing**: In banter or roast videos, attribute sudden speaker shifts (e.g., `[GIRL]: "N***A, SHUT THE F**K UP!"`) and the reaction (`SHE TOLD... "N***A, SHUT THE F**K UP", YO!`) to preserve the comedic timing and context.
+5. **Zero-Tolerance for Phonetic English Forcing**: Never let the model force Kannada/Hindi/Tamil into English.
+   - `yaaro idyella` -> never `ididyhalla` or `did he holler`
+   - `Lucid` -> never `Lucy` or `Blue`
+   - `Mute mado` -> never `4 mutes` or `mute made`
+   - `Chappar` -> never `chappri`
+   - `Raze` -> never `raised`
+   - `into your mom` -> never `into your mouth`
 
-## 3. Censorship Rules
-- Mask vulgar words with first letter, last letter, and 2-3 stars:
+## 3. Subtitle Pacing, Styling & Safe Zones
+- **Font & Sizing**: `Impact` font, size 74-78, 8px black outline, 3px shadow.
+- **Pop Highlight**: Active spoken word pops in Neon Yellow (`&H002EFFFF`) with 115% scale (`\fscx115\fscy115`).
+- **Emoji DirectWrite Fallback**: All emojis wrapped in `{\fnSegoe UI Emoji}`.
+- **Vertical Safe Margins**:
+  - Standard Center / Split: `MarginV: 360` to `450` from bottom.
+  - Subtitles must NEVER overlap either the top game video, the center Discord voice card, or the bottom Instagram engagement UI buttons.
+
+## 4. Censorship Rules
+- Mask vulgar words using first letter, last letter, and asterisks:
   `DICK` -> `D**K`, `SHIT` -> `S**T`, `FUCK` -> `F**K`, `NIGGA` -> `N***A`, `RETARDED` -> `R******D`, `BITCH` -> `B***H`.
 
-## 4. Workspace Cleanliness
-- Always delete scratch scripts, extracted audio waveforms (`*.wav`, `*.aac`), frame previews (`*.jpg`), and `.ass` files after rendering.
-- Keep only final `.mp4` reels in `reels/`.
-- Ensure all media files remain ignored by Git via `.gitignore`.
+## 5. Universal Layout Presets
+- `center`: 9:16 center crop with optional dynamic popping sticker.
+- `ambient`: Blurred 9:16 background with centered 16:9 feed.
+- `split`: Valorant cards + Discord overlay + top banner header.
+- `discord_game`: 16:9 gameplay at top (`y = 130-670`), enlarged Discord voice overlay card in center (`y = 695-1201`), subtitles in bottom safe margin (`MarginV: 360`).

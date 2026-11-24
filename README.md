@@ -149,6 +149,18 @@ python clipper.py render "gameplay.mp4" \
   --sticker-time 23.0-27.5
 ```
 
+#### 🔍 Dynamic Snap-Zoom & Comedic SFX Layering
+Zoom into a funny character moment and layer meme sound effects (e.g. Vine Boom) with millisecond delays and non-clipping volume mixing:
+```bash
+python clipper.py render "harish shemale.mp4" \
+  --out "reels/harish_shemale_reel.mp4" \
+  --layout center \
+  --cut 0:16-0:42 \
+  --zoom "23.0-26.0:450:800:650:120" \
+  --sfx "8.0:sfx/vine_boom.mp3:0.40,23.0:sfx/vine_boom.mp3:0.45" \
+  --subs "subtitles.ass"
+```
+
 ---
 
 ### 5. Batch Processing (`batch`)

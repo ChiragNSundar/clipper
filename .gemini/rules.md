@@ -39,3 +39,14 @@ Speech models like Whisper `base` will catastrophically hallucinate on overlappi
 - `ambient`: Blurred 9:16 background with centered 16:9 feed.
 - `split`: Valorant cards + Discord overlay + top banner header.
 - `discord_game`: 16:9 gameplay at top (`y = 130-670`), enlarged Discord voice overlay card in center (`y = 695-1201`), subtitles in bottom safe margin (`MarginV: 360`).
+
+## 6. Comedic Timing, Sound Effects & Visual Effects
+- **Layered Sound Effects (`sfx/`)**:
+  - Reusable comedic SFX (e.g. `sfx/vine_boom.mp3`) are stored in `sfx/`.
+  - When layering under speech, maintain balanced volume (`volume=0.35` to `0.45`) and use `normalize=0` with `amix` to prevent audio ducking or speech clipping.
+  - Place boom sound effects during awkward silences, sudden reveals, or sus moments.
+- **Dynamic Snap-Zooms (`--zoom`)**:
+  - For visual punchlines (e.g. characters in sus poses), use `--zoom "start-end:w:h:x:y"` to zoom in tightly for the punchline duration (typically 2-4 seconds).
+- **Meta-Subtitle Annotations**:
+  - When deadpan silence or an awkward pause occurs between dialogue, annotate it in subtitles between asterisks (e.g. `*AWKWARD SILENCE*... 💀🗿`).
+

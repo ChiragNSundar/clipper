@@ -58,6 +58,30 @@ def parse_sticker_time(st_str: str):
         return (float(p[0]), float(p[1]))
     return None
 
+def parse_zoom(z_str: str):
+    """Parse zoom window string like '23.0-26.0:450:800:650:120'."""
+    if not z_str:
+        return None
+    parts = z_str.split(":", 1)
+    time_part = parts[0]
+    crop_part = parts[1] if len(parts) > 1 else "450:800:650:120"
+    st, en = time_part.split("-")
+    return (float(st), float(en), crop_part)
+
+def parse_sfx_cues(sfx_str: str):
+    """Parse comma-separated SFX cues like '8.0:sfx/vine_boom.mp3:0.4,23.0:sfx/vine_boom.mp3:0.45'."""
+    if not sfx_str:
+        return None
+    cues = []
+    for item in sfx_str.split(","):
+        p = item.strip().split(":")
+        if len(p) >= 2:
+            t = float(p[0])
+            path = p[1]
+            vol = float(p[2]) if len(p) > 2 else 0.4
+            cues.append((t, path, vol))
+    return cues
+
 def run_batch_file(config_path: str):
     """Process a batch of reels defined in a JSON file."""
     if not os.path.exists(config_path):
@@ -126,6 +150,8 @@ def main():
     p_render.add_argument("--main-scale", default="800:600", help="Scale for main video in split layout (w:h)")
     p_render.add_argument("--sec-crop", default="230:250:0:15", help="Crop for secondary video in split layout (w:h:x:y)")
     p_render.add_argument("--sec-scale", default="440:480", help="Scale for secondary video in split layout (w:h)")
+    p_render.add_argument("--zoom", help="Zoom window e.g. '23.0-26.0:450:800:650:120'")
+    p_render.add_argument("--sfx", help="SFX cues e.g. '8.0:sfx/vine_boom.mp3:0.4,23.0:sfx/vine_boom.mp3:0.45'")
 
     # 4. batch command
     p_batch = subparsers.add_parser("batch", help="Batch render reels from a JSON configuration file")
@@ -162,6 +188,8 @@ def main():
 
         sub_file = args.subs
         s_time = parse_sticker_time(args.sticker_time)
+        z_win = parse_zoom(args.zoom)
+        sfx_c = parse_sfx_cues(args.sfx)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             if args.auto_subs and not sub_file:
@@ -186,7 +214,9 @@ def main():
                 sec_scale=args.sec_scale,
                 top_header=args.top_header,
                 sticker_path=args.sticker,
-                sticker_time=s_time
+                sticker_time=s_time,
+                zoom_window=z_win,
+                sfx_cues=sfx_c
             )
 
 if __name__ == "__main__":

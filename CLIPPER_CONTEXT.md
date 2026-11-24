@@ -151,3 +151,13 @@ python clipper.py batch reels.json
 4. **Speaker Attribution & Punchline Framing**: When a funny moment occurs (e.g. teammate snapping in Discord call), attribute the speaker (`[GIRL]: "N***A, SHUT THE F**K UP!"`) and the reaction (`SHE TOLD... "N***A, SHUT THE F**K UP", YO!`) to preserve comedic timing.
 5. **Censorship**: Strictly apply asterisks to vulgarity (`N***A`, `F**K`, `D**K`, `B***H`, `S**T`).
 
+---
+
+## 9. Comedic Effects: SFX Layering & Snap-Zooms
+
+- **Dedicated SFX Assets (`sfx/`)**: Reusable comedic sound effects (e.g. `sfx/vine_boom.mp3`) are stored in `sfx/`.
+- **Audio Mixing Protocol**: When layering SFX under active speech or during awkward silences, set volume to `0.35`–`0.45` and mix with `amix=inputs=...:duration=first:normalize=0` so speech volume is not attenuated.
+- **Dynamic Snap-Zoom**: For visual punchlines (e.g. characters in sus poses), use `--zoom "start-end:w:h:x:y"` (e.g. `--zoom "23.0-26.0:450:800:650:120"`).
+- **Meta-Subtitle Annotations**: When deadpan silence occurs, annotate with asterisk-bracketed meta-subtitles (e.g. `*AWKWARD SILENCE*... 💀🗿`).
+
+

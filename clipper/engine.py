@@ -89,6 +89,8 @@ def render_reel(
     sticker_path: str = None,
     sticker_time: tuple = None,  # (start_t, end_t) for dynamic popping stickers
     sticker_pos_y: int = 420,
+    zoom_window: tuple = None,   # (start_t, end_t, crop_str) e.g. (23.0, 26.0, "450:800:650:120")
+    sfx_cues: list = None,       # list of (timestamp_sec, sfx_path, volume)
     crf: int = 20,
     preset: str = "veryfast",
     timeout_sec: int = 180
@@ -153,32 +155,83 @@ def render_reel(
         if ass_subtitle_path and os.path.exists(ass_subtitle_path):
             safe_ass = os.path.abspath(ass_subtitle_path).replace("\\", "/").replace(":", "\\:")
 
+        # Prepare SFX inputs if provided
+        sfx_inputs = []
+        if sfx_cues:
+            for _, sfx_path, _ in sfx_cues:
+                sfx_inputs.extend(["-i", sfx_path])
+
         extra_inputs = []
 
         if layout == "center":
-            # Direct 9:16 center crop with lanczos and setsar=1
-            if sticker_path and os.path.exists(sticker_path) and sticker_time:
-                # Dynamic popping sticker (like make_reels.py Bonnie/Mustang)
-                extra_inputs = ["-i", sticker_path]
-                o_start, o_end = sticker_time
-                fc = (
-                    f"[0:v]crop=ih*9/16:ih:(iw-ow)/2:0,scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1[bg];"
-                    f"[bg][1:v]overlay=(W-w)/2:{sticker_pos_y}:enable='between(t,{o_start},{o_end})'[v_comp]"
-                )
+            # Direct 9:16 center crop with optional dynamic zoom & sticker
+            if zoom_window or (sticker_path and os.path.exists(sticker_path) and sticker_time) or sfx_cues:
+                fc_parts = []
+                if sticker_path and os.path.exists(sticker_path) and sticker_time:
+                    extra_inputs.extend(["-i", sticker_path])
+
+                # Base index for SFX inputs: 1 (for 0:v) + len(extra_inputs)
+                sfx_base_idx = 1 + (1 if (sticker_path and os.path.exists(sticker_path) and sticker_time) else 0)
+
+                # 1. Video stream processing
+                if zoom_window:
+                    z_st, z_en, z_crop = zoom_window
+                    tot_d = duration or z_en
+                    fc_parts.append(
+                        f"[0:v]trim=0:{z_st},setpts=PTS-STARTPTS,crop=ih*9/16:ih:(iw-ow)/2:0,scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1[v_pre];"
+                        f"[0:v]trim={z_st}:{z_en},setpts=PTS-STARTPTS,crop={z_crop},scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1[v_zoom];"
+                    )
+                    if z_en < tot_d:
+                        fc_parts.append(
+                            f"[0:v]trim={z_en}:{tot_d},setpts=PTS-STARTPTS,crop=ih*9/16:ih:(iw-ow)/2:0,scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1[v_post];"
+                            f"[v_pre][v_zoom][v_post]concat=n=3:v=1:a=0[v_base]"
+                        )
+                    else:
+                        fc_parts.append(f"[v_pre][v_zoom]concat=n=2:v=1:a=0[v_base]")
+                else:
+                    fc_parts.append(f"[0:v]crop=ih*9/16:ih:(iw-ow)/2:0,scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1[v_base]")
+
+                # 2. Sticker overlay if any
+                if sticker_path and os.path.exists(sticker_path) and sticker_time:
+                    o_start, o_end = sticker_time
+                    fc_parts.append(f";[v_base][1:v]overlay=(W-w)/2:{sticker_pos_y}:enable='between(t,{o_start},{o_end})'[v_comp]")
+                else:
+                    fc_parts.append(f";[v_base]null[v_comp]")
+
+                # 3. Subtitles
                 if safe_ass:
-                    fc += f";[v_comp]subtitles='{safe_ass}'[v_out]"
+                    fc_parts.append(f";[v_comp]subtitles='{safe_ass}'[v_out]")
                     map_v = "[v_out]"
                 else:
                     map_v = "[v_comp]"
+
+                # 4. Audio mixing with SFX cues
+                if sfx_cues:
+                    a_parts = ["[0:a]volume=1.0[a0]"]
+                    mix_ins = ["[a0]"]
+                    for idx, (cue_t, _, cue_vol) in enumerate(sfx_cues):
+                        inp_i = sfx_base_idx + idx
+                        cue_ms = int(cue_t * 1000)
+                        a_parts.append(f"[{inp_i}:a]adelay={cue_ms}|{cue_ms},volume={cue_vol}[sfx_{idx}]")
+                        mix_ins.append(f"[sfx_{idx}]")
+                    a_parts.append(f"{''.join(mix_ins)}amix=inputs={len(mix_ins)}:duration=first:normalize=0[a_out]")
+                    fc_parts.append(";" + ";".join(a_parts))
+                    map_a = "[a_out]"
+                else:
+                    map_a = "0:a"
+
+                fc = "".join(fc_parts)
                 cmd = [
                     FFMPEG, "-y",
                     *input_args,
                     *extra_inputs,
+                    *sfx_inputs,
                     "-filter_complex", fc,
-                    "-map", map_v, "-map", "0:a",
+                    "-map", map_v, "-map", map_a,
                     "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
                     "-pix_fmt", "yuv420p",
                     "-c:a", "aac", "-b:a", "192k",
+                    "-shortest",
                     "-movflags", "+faststart",
                     output_video
                 ]

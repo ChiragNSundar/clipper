@@ -34,6 +34,10 @@ Standard ASR engines (Whisper, Google Speech, etc.) default to English and suffe
 - **Beda** (ಬೇಡ): *"Don't want" / "No"*.
 - **Ashtena? / Ashteh** (ಅಷ್ಟೇನಾ? / ಅಷ್ಟೇ): *"Is that all? / That's all"*.
 - **Houda?** (ಹೌದಾ?): *"Is it?" / "Really?"*.
+- **Bulbul mathadakkilva** (ಬುಲ್ ಬುಲ್ ಮಾತಾಡಕಿಲ್ವಾ): Iconic song hook from Darshan Thoogudeepa's superhit movie *Bul Bul* ("Bulbul, won't you speak?!").
+- **Naa olle hudga alva?** (ನಾ ಒಳ್ಳೆ ಹುಡ್ಗ ಅಲ್ವಾ?): *"Am I not a good boy?"* (Verse from *Bul Bul* song).
+- **Naa nodak chandag ilva?** (ನಾ ನೋಡಕ್ ಚಂದಾಗ್ ಇಲ್ವಾ?): *"Do I not look handsome?"* (Verse from *Bul Bul* song).
+- **Nan preethi madak ilva?** (ನನ್ ಪ್ರೀತಿ ಮಾಡಕ್ ಇಲ್ವಾ?): *"Won't you love me?"* (Verse from *Bul Bul* song).
 - **Yaaro hesar ittiddala?**: *"Someone named it right?"*.
 - **Lo / Da / Guru / Macha / Maga**: Regional informal address (*Bro / dude / homie*).
 - **PU**: Pre-University college (11th & 12th grade in Karnataka).
@@ -85,7 +89,40 @@ When a person or prominent subject is confirmed in the audio, a rounded portrait
 
 ---
 
-## 6. Workspace & Git Cleanliness
+## 6. Universal Clipper Engine & Architecture
+
+The workspace contains a standardized CLI and Python module (`clipper/` + `clipper.py`) to eliminate repetitive ad-hoc scripts and prevent stuck renders.
+
+### Universal CLI Commands:
+```bash
+# 1. Inspect Video Details
+python clipper.py info "video.mp4"
+
+# 2. Transcribe & Auto-Generate Subtitles (with Kanglish slang glossary & micro-chunking)
+python clipper.py transcribe "video.mp4" --out "subtitles.ass"
+
+# 3. Render 9:16 Center Crop Reel
+python clipper.py render "video.mp4" --out "reels/output.mp4" --layout center --cut 0:15-0:45 --auto-subs
+
+# 4. Render Blurred Ambient 16:9 Reel
+python clipper.py render "video.mp4" --out "reels/output.mp4" --layout ambient --cut 0:15-0:45 --auto-subs
+
+# 5. Render Split / Discord Overlay Reel
+python clipper.py render "video.mp4" --out "reels/output.mp4" --layout split \
+  --top-header "BUL BUL FANS" \
+  --sticker "darshan_sticker.png" \
+  --subs "subtitles.ass"
+```
+
+### 🚨 Critical Anti-Hang / FFmpeg Guardrails:
+1. **Never Use Unbounded Filter Sources**: Filters like `color=...` or synthetic audio generators produce infinite frames when piped into `overlay` without strict limits. Always use `drawbox` directly on video frames instead of synthetic color layers.
+2. **Strict Loop & Bounds Flag**: Always pass `-shortest` on composite commands and `:shortest=1` on overlay graphs.
+3. **Subprocess Timeout**: All render operations in `clipper/engine.py` are wrapped in a hard timeout (`timeout_sec=180`) to guarantee an execution never runs unchecked.
+4. **Discord Crop Left Edge**: When cropping Discord overlays, always start at `x: 0` to preserve the full circular avatar pfps of speaking teammates.
+
+---
+
+## 7. Workspace & Git Cleanliness
 
 - **Keep on Disk**:
   - Final `.mp4` video reels inside `reels/`.

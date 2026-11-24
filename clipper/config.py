@@ -27,6 +27,24 @@ DEFAULT_FONT_SIZE = 74
 DEFAULT_OUTLINE = 8
 DEFAULT_SHADOW = 3
 
+# Directory for sticker images
+STICKERS_DIR = "stickers"
+
+def resolve_sticker_path(name: str) -> str:
+    """Resolve sticker name or path to an absolute/relative path within stickers/."""
+    if not name:
+        return None
+    candidates = [
+        name,
+        os.path.join(STICKERS_DIR, name),
+        os.path.join(STICKERS_DIR, f"{name}.png"),
+        os.path.join(STICKERS_DIR, f"{name}_sticker.png")
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return name
+
 # Vulgarity / Censorship Filter
 CENSOR_DICT = {
     "NIGGA": "N***A",

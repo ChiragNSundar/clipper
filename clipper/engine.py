@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import subprocess
-from .config import FFMPEG, FFPROBE, CANVAS_WIDTH, CANVAS_HEIGHT, GYAN_FFMPEG_DIR
+from .config import FFMPEG, FFPROBE, CANVAS_WIDTH, CANVAS_HEIGHT, GYAN_FFMPEG_DIR, resolve_sticker_path
 from .layouts import create_banner_and_sticker_template
 from .subtitles import build_ass_script
 
@@ -106,6 +106,7 @@ def render_reel(
 
     cleanup_files = []
     source_to_use = input_video
+    sticker_path = resolve_sticker_path(sticker_path)
 
     # Check if input is a YouTube URL
     is_url = input_video.startswith("http://") or input_video.startswith("https://")

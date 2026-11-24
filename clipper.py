@@ -6,6 +6,7 @@ Unified toolkit for clipping, transcribing, and rendering 9:16 vertical reels.
 
 import os
 import sys
+import json
 import argparse
 from clipper import (
     render_reel,
@@ -18,13 +19,13 @@ from clipper import (
 )
 
 def parse_time_slice(cut_str: str):
-    """Parse time slice string like '0:15-0:45' or '12.5-25.0' into (start, duration)."""
+    """
+    Parse time slice string into list of (start, duration).
+    Supports single cut '0:15-0:45' or multi-cut '0:23-0:35,0:56-1:19'.
+    """
     if not cut_str:
-        return None, None
-    parts = cut_str.split("-")
-    if len(parts) != 2:
-        raise ValueError(f"Invalid cut format '{cut_str}'. Expected 'start-end' (e.g. 0:15-0:45)")
-    
+        return []
+
     def to_seconds(t_str):
         t_str = t_str.strip()
         if ":" in t_str:
@@ -35,9 +36,64 @@ def parse_time_slice(cut_str: str):
                 return float(p[0]) * 3600 + float(p[1]) * 60 + float(p[2])
         return float(t_str)
 
-    start = to_seconds(parts[0])
-    end = to_seconds(parts[1])
-    return start, max(0.0, end - start)
+    cuts = []
+    parts = cut_str.split(",")
+    for p in parts:
+        sub = p.strip().split("-")
+        if len(sub) == 2:
+            st = to_seconds(sub[0])
+            en = to_seconds(sub[1])
+            cuts.append((st, max(0.0, en - st)))
+        else:
+            raise ValueError(f"Invalid cut format '{p}'. Expected 'start-end' (e.g. 0:15-0:45)")
+    return cuts
+
+def parse_sticker_time(st_str: str):
+    """Parse sticker time window like '23.0-27.5'."""
+    if not st_str:
+        return None
+    p = st_str.split("-")
+    if len(p) == 2:
+        return (float(p[0]), float(p[1]))
+    return None
+
+def run_batch_file(config_path: str):
+    """Process a batch of reels defined in a JSON file."""
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        reels_data = json.load(f)
+
+    print(f"\n[Clipper Batch] Found {len(reels_data)} reels to render from {config_path}...\n")
+    for idx, r in enumerate(reels_data, 1):
+        print(f"🎬 Processing Reel {idx}/{len(reels_data)}: {r.get('name', f'Reel {idx}')}")
+        inp = r["input"]
+        out = r["out"]
+        layout = r.get("layout", "center")
+        cut = r.get("cut", None)
+        subs = r.get("subs", None)
+        header = r.get("top_header", None)
+        sticker = r.get("sticker", None)
+        s_time = parse_sticker_time(r.get("sticker_time", None))
+
+        cuts = parse_time_slice(cut) if cut else []
+        st, dur = cuts[0] if len(cuts) == 1 else (None, None)
+        multi_segs = cuts if len(cuts) > 1 else None
+
+        render_reel(
+            input_video=inp,
+            output_video=out,
+            layout=layout,
+            ass_subtitle_path=subs,
+            start_time=st,
+            duration=dur,
+            segments=multi_segs,
+            top_header=header,
+            sticker_path=sticker,
+            sticker_time=s_time
+        )
+    print("\n🎉 [Clipper Batch] All reels completed successfully!\n")
 
 def main():
     parser = argparse.ArgumentParser(description="Universal Clipper for Instagram Reels & TikTok Shorts")
@@ -56,18 +112,23 @@ def main():
 
     # 3. render command
     p_render = subparsers.add_parser("render", help="Render video into 9:16 vertical Reel")
-    p_render.add_argument("input", help="Input video path")
+    p_render.add_argument("input", help="Input video path or YouTube URL")
     p_render.add_argument("--out", "-o", required=True, help="Output reel .mp4 path")
     p_render.add_argument("--layout", "-l", choices=["center", "ambient", "split"], default="center", help="Layout style")
-    p_render.add_argument("--cut", "-c", help="Cut time slice e.g. 0:15-0:45")
+    p_render.add_argument("--cut", "-c", help="Cut time slice e.g. 0:15-0:45 or multi-cut 0:23-0:35,0:56-1:19")
     p_render.add_argument("--subs", "-s", help="Path to existing .ass subtitle file")
     p_render.add_argument("--auto-subs", action="store_true", help="Auto-transcribe and burn subtitles")
     p_render.add_argument("--top-header", help="Text for top header banner")
     p_render.add_argument("--sticker", help="Path to sticker image (e.g. actor portrait, badge)")
+    p_render.add_argument("--sticker-time", help="Time window for popping sticker (e.g. 23.0-27.5)")
     p_render.add_argument("--main-crop", default="640:480:320:160", help="Crop for main video in split layout (w:h:x:y)")
     p_render.add_argument("--main-scale", default="800:600", help="Scale for main video in split layout (w:h)")
     p_render.add_argument("--sec-crop", default="230:250:0:15", help="Crop for secondary video in split layout (w:h:x:y)")
     p_render.add_argument("--sec-scale", default="440:480", help="Scale for secondary video in split layout (w:h)")
+
+    # 4. batch command
+    p_batch = subparsers.add_parser("batch", help="Batch render reels from a JSON configuration file")
+    p_batch.add_argument("config", help="Path to JSON batch config file")
 
     args = parser.parse_args()
 
@@ -79,6 +140,9 @@ def main():
         print(f"Duration:   {info['duration']:.2f}s")
         print(f"Has Audio:  {info['has_audio']}")
         print(f"Size:       {info['size_bytes'] / (1024*1024):.2f} MB\n")
+
+    elif args.command == "batch":
+        run_batch_file(args.config)
 
     elif args.command == "transcribe":
         audio_tmp = "temp_audio.wav"
@@ -92,8 +156,12 @@ def main():
         print(f"[Clipper Success] Saved subtitles to {args.out}")
 
     elif args.command == "render":
-        start_t, dur_t = parse_time_slice(args.cut) if args.cut else (None, None)
+        cuts = parse_time_slice(args.cut) if args.cut else []
+        st, dur = cuts[0] if len(cuts) == 1 else (None, None)
+        multi_segs = cuts if len(cuts) > 1 else None
+
         sub_file = args.subs
+        s_time = parse_sticker_time(args.sticker_time)
 
         if args.auto_subs and not sub_file:
             audio_tmp = "temp_render_audio.wav"
@@ -110,14 +178,16 @@ def main():
             output_video=args.out,
             layout=args.layout,
             ass_subtitle_path=sub_file,
-            start_time=start_t,
-            duration=dur_t,
+            start_time=st,
+            duration=dur,
+            segments=multi_segs,
             main_crop=args.main_crop,
             main_scale=args.main_scale,
             sec_crop=args.sec_crop,
             sec_scale=args.sec_scale,
             top_header=args.top_header,
-            sticker_path=args.sticker
+            sticker_path=args.sticker,
+            sticker_time=s_time
         )
 
         if args.auto_subs and sub_file and os.path.exists(sub_file):

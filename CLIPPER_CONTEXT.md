@@ -101,17 +101,27 @@ python clipper.py info "video.mp4"
 # 2. Transcribe & Auto-Generate Subtitles (with Kanglish slang glossary & micro-chunking)
 python clipper.py transcribe "video.mp4" --out "subtitles.ass"
 
-# 3. Render 9:16 Center Crop Reel
-python clipper.py render "video.mp4" --out "reels/output.mp4" --layout center --cut 0:15-0:45 --auto-subs
+# 3. Render Direct from YouTube URL with Exact Slices (No Full VOD Download)
+python clipper.py render "https://www.youtube.com/watch?v=FsxbjwDg9vA" \
+  --out "reels/randeep_reel.mp4" \
+  --cut 0:23-0:35,0:56-1:19 \
+  --auto-subs
 
-# 4. Render Blurred Ambient 16:9 Reel
-python clipper.py render "video.mp4" --out "reels/output.mp4" --layout ambient --cut 0:15-0:45 --auto-subs
+# 4. Render with Dynamic Popping Sticker (e.g. Mustang / Bonnie popping only during reference)
+python clipper.py render "gameplay.mp4" \
+  --out "reels/mustang_reel.mp4" \
+  --sticker "mustang_sticker.png" \
+  --sticker-time 23.0-27.5 \
+  --subs "subtitles.ass"
 
 # 5. Render Split / Discord Overlay Reel
 python clipper.py render "video.mp4" --out "reels/output.mp4" --layout split \
   --top-header "BUL BUL FANS" \
   --sticker "darshan_sticker.png" \
   --subs "subtitles.ass"
+
+# 6. Batch Render Multiple Reels from JSON
+python clipper.py batch reels.json
 ```
 
 ### 🚨 Critical Anti-Hang / FFmpeg Guardrails:

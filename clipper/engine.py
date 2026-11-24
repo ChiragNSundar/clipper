@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import subprocess
-from .config import FFMPEG, FFPROBE, CANVAS_WIDTH, CANVAS_HEIGHT
+from .config import FFMPEG, FFPROBE, CANVAS_WIDTH, CANVAS_HEIGHT, GYAN_FFMPEG_DIR
 from .layouts import create_banner_and_sticker_template
 from .subtitles import build_ass_script
 
@@ -26,6 +26,48 @@ def probe_video(video_path: str) -> dict:
         "size_bytes": int(data["format"].get("size", 0))
     }
 
+def download_youtube_section(url: str, start_time: float, duration: float, out_path: str) -> str:
+    """
+    Directly download only the required section from a YouTube stream via yt-dlp.
+    Avoids downloading entire multi-gigabyte vods.
+    """
+    end_time = start_time + duration
+    cmd = [
+        sys.executable, "-m", "yt_dlp",
+        "--ffmpeg-location", GYAN_FFMPEG_DIR,
+        "--download-sections", f"*{start_time}-{end_time}",
+        "-f", "bv*[height<=1080]+ba/b",
+        "--merge-output-format", "mp4",
+        "-o", out_path,
+        url
+    ]
+    print(f"[Clipper] Downloading stream section {start_time}s to {end_time}s from {url}...")
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        raise RuntimeError(f"yt-dlp download failed: {res.stderr}")
+    return out_path
+
+def concat_segments(segment_files: list, out_path: str) -> str:
+    """Concatenate multiple video files seamlessly using FFmpeg filter complex."""
+    inputs = []
+    fc_parts = []
+    for i, seg in enumerate(segment_files):
+        inputs.extend(["-i", seg])
+        fc_parts.append(f"[{i}:v][{i}:a]")
+    fc = "".join(fc_parts) + f"concat=n={len(segment_files)}:v=1:a=1[v][a]"
+    cmd = [
+        FFMPEG, "-y",
+        *inputs,
+        "-filter_complex", fc,
+        "-map", "[v]", "-map", "[a]",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k",
+        out_path
+    ]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out_path
+
 def render_reel(
     input_video: str,
     output_video: str,
@@ -33,6 +75,7 @@ def render_reel(
     ass_subtitle_path: str = None,
     start_time: float = None,
     duration: float = None,
+    segments: list = None,
     # For split / multi-crop layout:
     main_crop: str = "640:480:320:160",
     main_scale: str = "800:600",
@@ -43,13 +86,16 @@ def render_reel(
     sec_bg_box: tuple = (305, 1065, 470, 510),
     top_header: str = None,
     sticker_path: str = None,
+    sticker_time: tuple = None,  # (start_t, end_t) for dynamic popping stickers
+    sticker_pos_y: int = 420,
     crf: int = 20,
     preset: str = "veryfast",
     timeout_sec: int = 180
 ) -> str:
     """
     Universally render an Instagram / TikTok 9:16 Reel.
-    Guarantees no stuck renders via -shortest, bounded drawbox, and timeout.
+    Guarantees mobile playback compatibility via setsar=1, flags=lanczos, pix_fmt yuv420p,
+    and hang prevention via -shortest and bounded drawbox.
     """
     os.makedirs(os.path.dirname(os.path.abspath(output_video)), exist_ok=True)
     if os.path.exists(output_video):
@@ -58,13 +104,51 @@ def render_reel(
         except:
             pass
 
+    cleanup_files = []
+    source_to_use = input_video
+
+    # Check if input is a YouTube URL
+    is_url = input_video.startswith("http://") or input_video.startswith("https://")
+    if is_url:
+        temp_dl = os.path.join(os.path.dirname(output_video), "temp_ytdlp_cut.mp4")
+        st = start_time or 0.0
+        dur = duration or 30.0
+        download_youtube_section(input_video, st, dur, temp_dl)
+        source_to_use = temp_dl
+        cleanup_files.append(temp_dl)
+        # Sliced during download, so reset offsets
+        start_time, duration = None, None
+
+    # Handle multi-segment cuts (e.g. combine 0:23-0:35 and 0:56-1:19 into 1 reel)
+    if segments and len(segments) > 1:
+        seg_files = []
+        for idx, (s_start, s_dur) in enumerate(segments):
+            seg_path = os.path.join(os.path.dirname(output_video), f"temp_seg_{idx}.mp4")
+            cmd_cut = [
+                FFMPEG, "-y",
+                "-ss", str(s_start), "-t", str(s_dur),
+                "-i", source_to_use,
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+                "-c:a", "aac", "-b:a", "192k",
+                seg_path
+            ]
+            subprocess.run(cmd_cut, check=True, capture_output=True)
+            seg_files.append(seg_path)
+            cleanup_files.append(seg_path)
+
+        temp_concat = os.path.join(os.path.dirname(output_video), "temp_combined.mp4")
+        concat_segments(seg_files, temp_concat)
+        source_to_use = temp_concat
+        cleanup_files.append(temp_concat)
+        start_time, duration = None, None
+
     # Build input args
     input_args = []
     if start_time is not None:
         input_args.extend(["-ss", str(start_time)])
     if duration is not None:
         input_args.extend(["-t", str(duration)])
-    input_args.extend(["-i", input_video])
+    input_args.extend(["-i", source_to_use])
 
     # Windows safe path for subtitles in filtergraph
     safe_ass = ""
@@ -75,26 +159,53 @@ def render_reel(
     extra_inputs = []
 
     if layout == "center":
-        # Direct 9:16 center crop
-        vf = f"crop=ih*9/16:ih:(iw-ow)/2:0,scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1"
-        if safe_ass:
-            vf += f",subtitles='{safe_ass}'"
-        cmd = [
-            FFMPEG, "-y",
-            *input_args,
-            "-vf", vf,
-            "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
-            "-c:a", "aac", "-b:a", "192k",
-            "-movflags", "+faststart",
-            output_video
-        ]
+        # Direct 9:16 center crop with lanczos and setsar=1
+        if sticker_path and os.path.exists(sticker_path) and sticker_time:
+            # Dynamic popping sticker (like make_reels.py Bonnie/Mustang)
+            extra_inputs = ["-i", sticker_path]
+            o_start, o_end = sticker_time
+            fc = (
+                f"[0:v]crop=ih*9/16:ih:(iw-ow)/2:0,scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1[bg];"
+                f"[bg][1:v]overlay=(W-w)/2:{sticker_pos_y}:enable='between(t,{o_start},{o_end})'[v_comp]"
+            )
+            if safe_ass:
+                fc += f";[v_comp]subtitles='{safe_ass}'[v_out]"
+                map_v = "[v_out]"
+            else:
+                map_v = "[v_comp]"
+            cmd = [
+                FFMPEG, "-y",
+                *input_args,
+                *extra_inputs,
+                "-filter_complex", fc,
+                "-map", map_v, "-map", "0:a",
+                "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "192k",
+                "-movflags", "+faststart",
+                output_video
+            ]
+        else:
+            vf = f"crop=ih*9/16:ih:(iw-ow)/2:0,scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1"
+            if safe_ass:
+                vf += f",subtitles='{safe_ass}'"
+            cmd = [
+                FFMPEG, "-y",
+                *input_args,
+                "-vf", vf,
+                "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "192k",
+                "-movflags", "+faststart",
+                output_video
+            ]
 
     elif layout == "ambient":
-        # Blurred background + centered 16:9 feed
+        # Blurred background + centered 16:9 feed with lanczos
         fc = (
             f"[0:v]scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:force_original_aspect_ratio=increase,"
-            f"crop={CANVAS_WIDTH}:{CANVAS_HEIGHT},boxblur=20:4,eq=brightness=-0.1:contrast=1.05[bg];"
-            f"[0:v]scale={CANVAS_WIDTH}:-1[fg];"
+            f"crop={CANVAS_WIDTH}:{CANVAS_HEIGHT},boxblur=20:4,eq=brightness=-0.1:contrast=1.05,setsar=1[bg];"
+            f"[0:v]scale={CANVAS_WIDTH}:-1:flags=lanczos,setsar=1[fg];"
             f"[bg][fg]overlay=(W-w)/2:(H-h)/2[v_comp]"
         )
         if safe_ass:
@@ -109,6 +220,7 @@ def render_reel(
             "-filter_complex", fc,
             "-map", map_v, "-map", "0:a",
             "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
+            "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "192k",
             "-movflags", "+faststart",
             output_video
@@ -120,18 +232,19 @@ def render_reel(
         create_banner_and_sticker_template(
             out_path=template_png,
             top_title=top_header,
-            sticker_path=sticker_path,
+            sticker_path=sticker_path if not sticker_time else None,
             main_border_box=(main_pos[0], main_pos[1], int(main_scale.split(':')[0]), int(main_scale.split(':')[1])),
             sec_border_box=sec_bg_box
         )
         extra_inputs = ["-loop", "1", "-i", template_png]
+        cleanup_files.append(template_png)
 
         # Note: drawbox directly draws solid background without infinite color stream!
         fc_parts = [
             f"[0:v]scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:force_original_aspect_ratio=increase,"
-            f"crop={CANVAS_WIDTH}:{CANVAS_HEIGHT},boxblur=20:4,eq=brightness=-0.1:contrast=1.05[bg];",
-            f"[0:v]crop={main_crop},scale={main_scale}[main];",
-            f"[0:v]crop={sec_crop},scale={sec_scale}[sec];",
+            f"crop={CANVAS_WIDTH}:{CANVAS_HEIGHT},boxblur=20:4,eq=brightness=-0.1:contrast=1.05,setsar=1[bg];",
+            f"[0:v]crop={main_crop},scale={main_scale}:flags=lanczos,setsar=1[main];",
+            f"[0:v]crop={sec_crop},scale={sec_scale}:flags=lanczos,setsar=1[sec];",
             f"[bg][main]overlay={main_pos[0]}:{main_pos[1]}[tmp1];",
             f"[tmp1]drawbox=x={sec_bg_box[0]}:y={sec_bg_box[1]}:w={sec_bg_box[2]}:h={sec_bg_box[3]}:color=0x2B2D31@1.0:t=fill[tmp_box];",
             f"[tmp_box][sec]overlay={sec_pos[0]}:{sec_pos[1]}[tmp2];",
@@ -151,6 +264,7 @@ def render_reel(
             "-filter_complex", fc,
             "-map", map_v, "-map", "0:a",
             "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
+            "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "192k",
             "-shortest",
             "-movflags", "+faststart",
@@ -166,12 +280,13 @@ def render_reel(
         print(f"[Clipper Error] FFmpeg failed:\n{res.stderr}")
         raise RuntimeError(f"FFmpeg error: {res.stderr}")
 
-    # Clean intermediate template if created
-    if layout == "split" and os.path.exists(template_png):
-        try:
-            os.remove(template_png)
-        except:
-            pass
+    # Clean intermediate scratch files
+    for cf in cleanup_files:
+        if os.path.exists(cf):
+            try:
+                os.remove(cf)
+            except:
+                pass
 
     size_mb = os.path.getsize(output_video) / (1024 * 1024)
     print(f"[Clipper Success] Generated {output_video} ({size_mb:.2f} MB)")

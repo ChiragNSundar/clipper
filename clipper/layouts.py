@@ -6,54 +6,87 @@ def create_banner_and_sticker_template(
     out_path: str,
     top_title: str = None,
     sticker_path: str = None,
-    sticker_pos: tuple = (405, 160, 270, 270),
-    main_border_box: tuple = (140, 450, 800, 600),
-    sec_border_box: tuple = (305, 1065, 470, 510)
+    sticker_pos: tuple = None,
+    main_border_box: tuple = None,
+    sec_border_box: tuple = None
 ) -> str:
     """
     Generate an RGBA overlay template containing top banner, rounded sticker,
-    and frame borders with 100% transparent cutouts for live video streams.
+    and optional frame borders with 100% transparent cutouts for live video streams.
     """
     overlay = Image.new('RGBA', (CANVAS_WIDTH, CANVAS_HEIGHT), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
 
+    py2 = 0
     # 1. Top Banner
     if top_title:
-        try:
-            font_title = ImageFont.truetype(f"{DEFAULT_FONT}.ttf", 74)
-        except:
+        font_candidates = [
+            r"C:\Windows\Fonts\impact.ttf",
+            "impact.ttf",
+            f"{DEFAULT_FONT}.ttf",
+            r"C:\Windows\Fonts\arialbd.ttf",
+            "arialbd.ttf"
+        ]
+        font_title = None
+        for fpath in font_candidates:
+            try:
+                font_title = ImageFont.truetype(fpath, 95)
+                break
+            except Exception:
+                continue
+
+        if not font_title:
             font_title = ImageFont.load_default()
 
         bbox = draw.textbbox((0, 0), top_title, font=font_title)
         tw = bbox[2] - bbox[0]
         th = bbox[3] - bbox[1]
 
-        pill_w = tw + 80
-        pill_h = th + 36
+        pill_w = tw + 140
+        pill_h = th + 50
         px1 = (CANVAS_WIDTH - pill_w) // 2
-        py1 = 55
+        py1 = 60
         px2 = px1 + pill_w
         py2 = py1 + pill_h
 
-        draw.rounded_rectangle([px1 + 4, py1 + 6, px2 + 4, py2 + 6], radius=24, fill=(0, 0, 0, 160))
-        draw.rounded_rectangle([px1, py1, px2, py2], radius=24, fill=(225, 25, 35, 255), outline=(255, 255, 255, 255), width=5)
+        # Drop shadow behind banner
+        draw.rounded_rectangle([px1 + 5, py1 + 8, px2 + 5, py2 + 8], radius=35, fill=(0, 0, 0, 180))
+        # Vibrant red pill with solid white outline
+        draw.rounded_rectangle([px1, py1, px2, py2], radius=35, fill=(230, 30, 40, 255), outline=(255, 255, 255, 255), width=8)
         tx = (CANVAS_WIDTH - tw) // 2
-        ty = py1 + (pill_h - th) // 2 - 4
-        draw.text((tx + 3, ty + 3), top_title, font=font_title, fill=(0, 0, 0, 200))
+        ty = py1 + (pill_h - th) // 2 - 6
+        draw.text((tx + 4, ty + 4), top_title, font=font_title, fill=(0, 0, 0, 220))
         draw.text((tx, ty), top_title, font=font_title, fill=(255, 255, 255, 255))
 
     # 2. Sticker
     if sticker_path and os.path.exists(sticker_path):
-        sx, sy, sw, sh = sticker_pos
+        if sticker_pos is None:
+            sw, sh = 420, 420
+            sx = (CANVAS_WIDTH - sw) // 2
+            sy = (py2 + 25) if top_title else 120
+            sticker_pos = (sx, sy, sw, sh)
+        else:
+            sx, sy, sw, sh = sticker_pos
+
         sticker = Image.open(sticker_path).convert("RGBA")
         sticker = sticker.resize((sw, sh), Image.Resampling.LANCZOS)
         
-        # Shadow
-        shadow = Image.new('RGBA', (sw + 20, sh + 20), (0, 0, 0, 0))
+        # Rounded corners mask
+        mask = Image.new('L', (sw, sh), 0)
+        draw_m = ImageDraw.Draw(mask)
+        draw_m.rounded_rectangle([(0, 0), (sw, sh)], radius=45, fill=255)
+
+        # Soft drop shadow
+        shadow = Image.new('RGBA', (sw + 30, sh + 30), (0, 0, 0, 0))
         draw_s = ImageDraw.Draw(shadow)
-        draw_s.rounded_rectangle([(6, 8), (sw + 14, sh + 16)], radius=40, fill=(0, 0, 0, 150))
-        overlay.paste(shadow, (sx - 10, sy - 6), mask=shadow)
-        overlay.paste(sticker, (sx, sy), mask=sticker)
+        draw_s.rounded_rectangle([(10, 15), (sw + 20, sh + 25)], radius=50, fill=(0, 0, 0, 190))
+        overlay.paste(shadow, (sx - 10, sy - 10), mask=shadow)
+        
+        # Rounded sticker
+        overlay.paste(sticker, (sx, sy), mask=mask)
+
+        # White border around sticker card
+        draw.rounded_rectangle([sx - 3, sy - 3, sx + sw + 3, sy + sh + 3], radius=48, outline=(255, 255, 255, 240), width=7)
 
     # 3. Main Video Border (e.g. Valorant Cards)
     if main_border_box:

@@ -164,14 +164,12 @@ def render_reel(
         extra_inputs = []
 
         if layout == "center":
-            # Direct 9:16 center crop with optional dynamic zoom & sticker
-            if zoom_window or (sticker_path and os.path.exists(sticker_path) and sticker_time) or sfx_cues:
-                fc_parts = []
-                if sticker_path and os.path.exists(sticker_path) and sticker_time:
-                    extra_inputs.extend(["-i", sticker_path])
+            # Direct 9:16 center crop with optional dynamic zoom & banner/sticker
+            has_static_overlay = bool(top_header or (sticker_path and os.path.exists(sticker_path) and not sticker_time))
+            has_timed_sticker = bool(sticker_path and os.path.exists(sticker_path) and sticker_time)
 
-                # Base index for SFX inputs: 1 (for 0:v) + len(extra_inputs)
-                sfx_base_idx = 1 + (1 if (sticker_path and os.path.exists(sticker_path) and sticker_time) else 0)
+            if zoom_window or has_static_overlay or has_timed_sticker or sfx_cues:
+                fc_parts = []
 
                 # 1. Video stream processing
                 if zoom_window:
@@ -191,24 +189,48 @@ def render_reel(
                 else:
                     fc_parts.append(f"[0:v]crop=ih*9/16:ih:(iw-ow)/2:0,scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:flags=lanczos,setsar=1[v_base]")
 
-                # 2. Sticker overlay if any
-                if sticker_path and os.path.exists(sticker_path) and sticker_time:
-                    o_start, o_end = sticker_time
-                    fc_parts.append(f";[v_base][1:v]overlay=(W-w)/2:{sticker_pos_y}:enable='between(t,{o_start},{o_end})'[v_comp]")
-                else:
-                    fc_parts.append(f";[v_base]null[v_comp]")
+                curr_v = "[v_base]"
 
-                # 3. Subtitles
+                # Track 0-based input indices (0 is input_args)
+                next_in_idx = 1
+
+                # 2. Static banner & sticker template
+                if has_static_overlay:
+                    template_png = os.path.join(temp_dir, "temp_center_template.png")
+                    create_banner_and_sticker_template(
+                        out_path=template_png,
+                        top_title=top_header,
+                        sticker_path=sticker_path if not sticker_time else None,
+                        main_border_box=None,
+                        sec_border_box=None
+                    )
+                    extra_inputs.extend(["-loop", "1", "-i", template_png])
+                    template_in_idx = next_in_idx
+                    next_in_idx += 1
+                    fc_parts.append(f";{curr_v}[{template_in_idx}:v]overlay=0:0:shortest=1[v_template]")
+                    curr_v = "[v_template]"
+
+                # 3. Dynamic timed popping sticker
+                if has_timed_sticker:
+                    extra_inputs.extend(["-i", sticker_path])
+                    timed_in_idx = next_in_idx
+                    next_in_idx += 1
+                    o_start, o_end = sticker_time
+                    fc_parts.append(f";{curr_v}[{timed_in_idx}:v]overlay=(W-w)/2:{sticker_pos_y}:enable='between(t,{o_start},{o_end})'[v_pop]")
+                    curr_v = "[v_pop]"
+
+                # 4. Subtitles
                 if safe_ass:
-                    fc_parts.append(f";[v_comp]subtitles='{safe_ass}'[v_out]")
+                    fc_parts.append(f";{curr_v}subtitles='{safe_ass}'[v_out]")
                     map_v = "[v_out]"
                 else:
-                    map_v = "[v_comp]"
+                    map_v = curr_v
 
-                # 4. Audio mixing with SFX cues
+                # 5. Audio mixing with SFX cues
                 if sfx_cues:
                     a_parts = ["[0:a]volume=1.0[a0]"]
                     mix_ins = ["[a0]"]
+                    sfx_base_idx = next_in_idx
                     for idx, (cue_t, _, cue_vol) in enumerate(sfx_cues):
                         inp_i = sfx_base_idx + idx
                         cue_ms = int(cue_t * 1000)
@@ -251,27 +273,73 @@ def render_reel(
                 ]
 
         elif layout == "ambient":
-            # Blurred background + centered 16:9 feed with lanczos
-            fc = (
-                f"[0:v]scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:force_original_aspect_ratio=increase,"
-                f"crop={CANVAS_WIDTH}:{CANVAS_HEIGHT},boxblur=20:4,eq=brightness=-0.1:contrast=1.05,setsar=1[bg];"
-                f"[0:v]scale={CANVAS_WIDTH}:-1:flags=lanczos,setsar=1[fg];"
-                f"[bg][fg]overlay=(W-w)/2:(H-h)/2[v_comp]"
-            )
+            # Blurred background + centered feed with lanczos
+            has_header_or_sticker = bool(top_header or (sticker_path and os.path.exists(sticker_path)))
+            extra_inputs = []
+
+            fg_w = 1000
+            fg_scale = main_scale if main_scale != "800:600" else f"{fg_w}:-1"
+            fg_pos_y = main_pos[1] if main_pos != (140, 450) else 500
+
+            if has_header_or_sticker:
+                template_png = os.path.join(temp_dir, "temp_ambient_template.png")
+                # Border box around fg video (approx 1000x462 for widescreen)
+                fg_h = int(fg_w * 720 / 1560)
+                create_banner_and_sticker_template(
+                    out_path=template_png,
+                    top_title=top_header,
+                    sticker_path=sticker_path if not sticker_time else None,
+                    main_border_box=((CANVAS_WIDTH - fg_w) // 2, fg_pos_y, fg_w, fg_h),
+                    sec_border_box=None
+                )
+                extra_inputs = ["-loop", "1", "-i", template_png]
+                fc = (
+                    f"[0:v]scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:force_original_aspect_ratio=increase,"
+                    f"crop={CANVAS_WIDTH}:{CANVAS_HEIGHT},boxblur=20:4,eq=brightness=-0.1:contrast=1.05,setsar=1[bg];"
+                    f"[0:v]scale={fg_scale}:flags=lanczos,setsar=1[fg];"
+                    f"[bg][fg]overlay=(W-w)/2:{fg_pos_y}[v_tmp];"
+                    f"[v_tmp][1:v]overlay=0:0:shortest=1[v_comp]"
+                )
+            else:
+                fc = (
+                    f"[0:v]scale={CANVAS_WIDTH}:{CANVAS_HEIGHT}:force_original_aspect_ratio=increase,"
+                    f"crop={CANVAS_WIDTH}:{CANVAS_HEIGHT},boxblur=20:4,eq=brightness=-0.1:contrast=1.05,setsar=1[bg];"
+                    f"[0:v]scale={CANVAS_WIDTH}:-1:flags=lanczos,setsar=1[fg];"
+                    f"[bg][fg]overlay=(W-w)/2:(H-h)/2[v_comp]"
+                )
+
             if safe_ass:
                 fc += f";[v_comp]subtitles='{safe_ass}'[v_out]"
                 map_v = "[v_out]"
             else:
                 map_v = "[v_comp]"
 
+            if sfx_cues:
+                a_parts = ["[0:a]volume=1.0[a0]"]
+                mix_ins = ["[a0]"]
+                sfx_base_idx = 1 + len(extra_inputs)
+                for idx, (cue_t, _, cue_vol) in enumerate(sfx_cues):
+                    inp_i = sfx_base_idx + idx
+                    cue_ms = int(cue_t * 1000)
+                    a_parts.append(f"[{inp_i}:a]adelay={cue_ms}|{cue_ms},volume={cue_vol}[sfx_{idx}]")
+                    mix_ins.append(f"[sfx_{idx}]")
+                a_parts.append(f"{''.join(mix_ins)}amix=inputs={len(mix_ins)}:duration=first:normalize=0[a_out]")
+                fc += ";" + ";".join(a_parts)
+                map_a = "[a_out]"
+            else:
+                map_a = "0:a"
+
             cmd = [
                 FFMPEG, "-y",
                 *input_args,
+                *extra_inputs,
+                *sfx_inputs,
                 "-filter_complex", fc,
-                "-map", map_v, "-map", "0:a",
+                "-map", map_v, "-map", map_a,
                 "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
                 "-pix_fmt", "yuv420p",
                 "-c:a", "aac", "-b:a", "192k",
+                "-shortest",
                 "-movflags", "+faststart",
                 output_video
             ]

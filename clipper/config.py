@@ -83,13 +83,17 @@ SLANG_CORRECTIONS = {
     "iddidhyalla": "idyella",
     "yaaro iddidhyalla": "yaaro idyella",
     "yaaro idyella": "yaaro idyella",
+    "nim aji": "nim ajji",
+    "nim ajee": "nim ajji",
+    "nange ishta": "nange ishta",
+    "yaro ivnu": "yaaro ivnu",
 }
 
 # Regional vocabulary initial prompt for Whisper
 WHISPER_REGIONAL_PROMPT = (
     "Kannada, Kanglish, Hinglish, gaming slang. "
     "Mute mado, chappar, gothaa, anthe, sumne iri, maga, macha, bro, da. "
-    "Lucid, idyella, yaaro idyella, friend list names. "
+    "Lucid, idyella, yaaro idyella, nim ajji, nim ajji nange, ishta, yaaro ivnu. "
     "Valorant, Brawlhalla, Raze, ults, lock-in, clutch. "
     "Bulbul mathadakkilva, naa olle hudga alva, naa nodak chandag ilva, nan preethi madak ilva."
 )
